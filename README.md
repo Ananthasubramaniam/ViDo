@@ -99,14 +99,22 @@ A shared space for coordinated execution.
 - Monitor shared progress and updates
 - Receive real-time changes without manual refreshing
 
-### ✨ AI Assistance — Optional
+### ✨ AI Agent — The Flagship Phase
 
-- Suggest context-aware follow-up tasks
-- Surface deadline and workload risks
+- Generate context-aware tasks from goals, schedules, and recent activity
+- Recommend relevant follow-up actions automatically
+- Surface deadline, dependency, and workload risks
 - Break broad goals into actionable steps
-- Summarize recent team activity
+- Summarize recent personal and team activity
+- Continuously improve recommendations using task context and progress history
 
-AI remains optional, explainable, and user-controlled. The reliable task-management experience comes first.
+The embedded AI agent is ViDo’s defining capability and the most important phase of the project. Its recommendations must remain explainable and user-approved—the agent should assist decisions without silently changing tasks or assignments.
+
+### Initial AI Dataset
+
+Phase 4 will initially use a two-year household-task dataset containing **1,786 task records** across **20 recurring task types**. It includes task creation, deadline, and completion dates, providing a practical starting point for learning recurrence patterns, completion delays, deadline risk, and next-task recommendations.
+
+The dataset is a foundation for experimentation, not the final intelligence layer. ViDo will later enrich recommendations using authenticated user context, progress checkpoints, team activity, and live schedules.
 
 ## How a Task Flows
 
@@ -133,17 +141,17 @@ Task views are calculated from real task data:
 
 ## Roadmap
 
-- [ ] **Milestone 1 — Minimal Task Management Core**  
+- [ ] **Milestone 1 — Minimal Task Management Core**
   A focused to-do experience with task lifecycle, precise deadlines, progress percentages, checkpoints, status views, completion tracking, and archiving.
 
-- [ ] **Milestone 2 — Authentication and Multi-User Support**  
+- [ ] **Milestone 2 — Authentication and Multi-User Support**
   Secure sign-in, persistent profiles, cloud data, sessions, and strict user-level isolation.
 
-- [ ] **Milestone 3 — Shared Tasks and Team Collaboration**  
+- [ ] **Milestone 3 — Shared Tasks and Team Collaboration**
   Shared tasks across users, teams, invitations, assignment, comments, threaded replies, progress updates, and real-time synchronization.
 
-- [ ] **Milestone 4 — AI-Powered Recommendations**  
-  Optional generated tasks, workload-aware suggestions, follow-up actions, and agent embedding.
+- [ ] **Milestone 4 — Embedded AI Agent and Recommendations** ⭐
+  The flagship milestone: context-aware task generation, workload and deadline analysis, intelligent follow-up actions, activity summaries, and a deeply integrated recommendation agent.
 
 ## Tech Stack
 
@@ -163,7 +171,7 @@ Task views are calculated from real task data:
 ```text
 Clarity over complexity      History over guesswork
 Privacy by default           Collaboration without noise
-Reliable core before AI      Progress you can actually see
+Trustworthy foundations      AI that drives useful action
 ```
 
 ## Project Status

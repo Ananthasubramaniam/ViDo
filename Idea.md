@@ -15,7 +15,7 @@ ViDo began as a deliberately simple to-do application that could grow in four un
 1. A minimal personal to-do list.
 2. Authentication and support for multiple users.
 3. Shared tasks with comments and threaded replies.
-4. Optional AI-generated tasks and recommendations through an embedded agent.
+4. A flagship embedded AI agent for task generation and intelligent recommendations.
 
 The simplicity is intentional. A to-do list is familiar to almost everyone, making it a useful product to build and an approachable case study for learning how a real application evolves. Although MERN was discussed initially, the meeting explicitly left the final technology choice open. The selected frontend direction is now Vite, React, and TypeScript.
 
@@ -133,19 +133,42 @@ Every team workspace has an owner and one or more members. The owner can manage 
 
 Team tasks can be assigned to members while remaining visible to the authorized team. Task updates identify their authors so progress remains attributable and auditable.
 
-## Optional AI Direction
+## The Embedded AI Agent
 
-Once task management, authentication, and team permissions are stable, ViDo may introduce an embedded AI assistant.
+The embedded AI agent is the defining capability and most important phase of ViDo. The earlier milestones create the trusted task, identity, collaboration, and history data that allow the agent to make genuinely useful recommendations.
 
-Potential capabilities include:
+Core capabilities include:
 
-- Suggesting follow-up tasks from recent checkpoints.
-- Detecting tasks that may miss their deadlines.
-- Recommending priorities based on workload and due dates.
-- Turning a broad goal into smaller actionable tasks.
-- Summarizing recent team activity.
+- Generating relevant tasks from goals, schedules, and current context.
+- Suggesting follow-up actions from recent checkpoints and discussions.
+- Detecting tasks at risk of missing their deadlines.
+- Recommending priorities based on workload, dependencies, and due dates.
+- Turning broad goals into smaller actionable tasks.
+- Summarizing recent personal and team activity.
+- Helping teams identify neglected work, blockers, and scheduling conflicts.
 
-AI recommendations should be explainable, optional, and user-approved. The system should suggest actions rather than silently changing tasks or assignments.
+Agent embedding should feel native to the product rather than like a separate chatbot attached afterward. Recommendations must be grounded in accessible workspace data, explainable to the user, and approved before the agent changes tasks or assignments.
+
+### Initial Phase 4 Dataset
+
+The first recommendation experiments will use a two-year household-task dataset with:
+
+- **1,786 task records**
+- **20 recurring task types**
+- Added dates spanning **27 October 2024 to 31 October 2026**
+- Deadline dates spanning **27 October 2024 to 7 November 2026**
+- **1,779 completed** and **7 incomplete** records
+- **966 late completions** and **813 on-time or early completions**
+
+Each record contains an instance ID, task type ID, task description, added date, deadline date, and completion date. This supports initial experiments in:
+
+- Predicting the next likely recurring task.
+- Recommending an appropriate future deadline.
+- Estimating the risk of late completion.
+- Learning task frequency and completion-delay patterns.
+- Generating proactive reminders and follow-up suggestions.
+
+The dataset is intentionally a starting point. It represents household tasks and does not yet include users, time-of-day deadlines, priorities, progress percentages, comments, teams, or workload context. The production agent should combine learned patterns with live, permission-scoped ViDo data rather than treating this dataset as universally representative.
 
 ## Product Principles
 
@@ -165,9 +188,9 @@ Users should never have to wonder whether a personal task is visible to a team.
 
 The application should make routine progress visible so meetings can focus on decisions and blockers.
 
-### Core reliability before advanced features
+### Trustworthy foundations for intelligent action
 
-Authentication, authorization, data integrity, and task history take priority over AI or decorative functionality.
+Authentication, authorization, data integrity, and task history provide the dependable context the AI agent needs. These foundations and the agent are parts of one product vision: reliable data powering useful, safe recommendations.
 
 ## Success Criteria
 
@@ -193,9 +216,9 @@ Add email/password authentication, persistent cloud data, user profiles, secure 
 
 Add shared tasks across users, team workspaces, email invitations, membership management, assignment, comments, threaded replies, shared progress updates, and real-time synchronization.
 
-### Milestone 4 — AI-Powered Recommendations
+### Milestone 4 — Embedded AI Agent and Recommendations
 
-Explore generated to-do items, workload-aware suggestions, and agent-based follow-up recommendations. This milestone is intentionally open and optional because it is substantially more complex than the first three.
+Deliver ViDo’s flagship capability: context-aware task generation, workload and deadline analysis, intelligent follow-up actions, activity summaries, and an agent embedded directly into personal and team workflows. This is the most important milestone and the culmination of the product vision.
 
 ## Learning and Content Vision
 
