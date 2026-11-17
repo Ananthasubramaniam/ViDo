@@ -6,14 +6,16 @@ This file is the starting point for any human or AI agent working in this reposi
 
 Before proposing or implementing a change, read these files in order:
 
-1. `context.md` — current operating context and constraints
-2. `MILESTONES.md` — implementation sequence and review gates
-3. `concept.html` — living visual product brief and decision log
-4. `Idea.md` — full product vision
-5. `README.md` — public project overview
-6. The active change under `openspec/changes/<change-name>/`, when one exists
+1. `AGENTS.md` — guidelines and invariants for AI agents and LLMs
+2. `FOLDER_STRUCTURE.md` — architectural directory map and file placement rules
+3. `context.md` — current operating context and constraints
+4. `MILESTONES.md` — implementation sequence and review gates
+5. `concept.html` — living visual product brief and decision log
+6. `Idea.md` — full product vision
+7. `README.md` — public project overview
+8. The active change under `openspec/changes/<change-name>/`, when one exists
 
-Do not infer current scope from the long-term vision alone. `MILESTONES.md` and the active OpenSpec change define what may be built now.
+Do not infer current scope from the long-term vision alone. `FOLDER_STRUCTURE.md` and the active OpenSpec change define where and how code may be structured.
 
 ## Product Summary
 

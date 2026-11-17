@@ -12,7 +12,7 @@ A modern task-management workspace built for focused individuals and transparent
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS_v4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![Vitest](https://img.shields.io/badge/Vitest-6E9F18?style=for-the-badge&logo=vitest&logoColor=white)](https://vitest.dev/)
 
-[Vision](./Idea.md) · [Living Concept](./concept.html) · [Tech Stack](#tech-stack) · [Getting Started](#getting-started)
+[Vision](./Idea.md) · [Living Concept](./concept.html) · [Folder Structure](./FOLDER_STRUCTURE.md) · [Agent Guidelines](./AGENTS.md) · [Tech Stack](#tech-stack) · [Getting Started](#getting-started)
 
 </div>
 
@@ -142,6 +142,8 @@ npm run preview
 ---
 
 ## Project Structure
+
+> For complete directory guidelines, placement rules, and anti-patterns, see **[FOLDER_STRUCTURE.md](./FOLDER_STRUCTURE.md)** and **[AGENTS.md](./AGENTS.md)**.
 
 ```text
 ViDo/
