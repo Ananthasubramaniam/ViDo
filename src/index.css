@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #16181d;
+  --muted: #676c76;
+  --faint: #9297a1;
+  --line: #e3e5e9;
+  --surface: #ffffff;
+  --canvas: #f5f6f8;
+  --dark: #1c2028;
+  --accent: #305fdd;
+  --accent-soft: #eef3ff;
+  --green: #247a56;
+  --green-soft: #eaf6f0;
+  --amber: #936019;
+  --amber-soft: #fff5df;
+  --red: #a44747;
+  --red-soft: #fff0ef;
+  --radius: 14px;
+}
+
+[data-accent="indigo"] {
+  --accent: #4338ca;
+  --accent-soft: #eef2ff;
+}
+
+[data-accent="green"] {
+  --accent: #247a56;
+  --accent-soft: #eaf6f0;
+}
+
+[data-accent="blue"] {
+  --accent: #305fdd;
+  --accent-soft: #eef3ff;
+}
+
+@theme {
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-line: var(--line);
+  --color-surface: var(--surface);
+  --color-canvas: var(--canvas);
+  --color-dark: var(--dark);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-vido-green: var(--green);
+  --color-vido-green-soft: var(--green-soft);
+  --color-vido-amber: var(--amber);
+  --color-vido-amber-soft: var(--amber-soft);
+  --color-vido-red: var(--red);
+  --color-vido-red-soft: var(--red-soft);
+}
+
+/* Global focus styling */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

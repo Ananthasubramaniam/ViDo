@@ -6,13 +6,13 @@
 
 A modern task-management workspace built for focused individuals and transparent teams.
 
-[![Project Status](https://img.shields.io/badge/status-planning-8B5CF6?style=for-the-badge)](#roadmap)
 [![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vite.dev/)
-[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
+[![React](https://img.shields.io/badge/React_19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Supabase](https://img.shields.io/badge/Supabase-181818?style=for-the-badge&logo=supabase&logoColor=3FCF8E)](https://supabase.com/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS_v4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![Vitest](https://img.shields.io/badge/Vitest-6E9F18?style=for-the-badge&logo=vitest&logoColor=white)](https://vitest.dev/)
 
-[Vision](./Idea.md) · [Features](#features) · [Roadmap](#roadmap) · [Tech Stack](#tech-stack)
+[Vision](./Idea.md) · [Living Concept](./concept.html) · [Tech Stack](#tech-stack) · [Getting Started](#getting-started)
 
 </div>
 
@@ -20,19 +20,27 @@ A modern task-management workspace built for focused individuals and transparent
 
 ## Why ViDo?
 
-A checkbox tells you that something is done. It does not tell you **how the work is going**.
+A simple checkbox tells you that something is done. It does not tell you **how the work is going**.
 
-ViDo gives every task a precise deadline, measurable progress, a clear owner, and a timestamped history. Individuals stay focused in a private workspace while teams coordinate from a shared source of truth—without turning every update into another meeting.
+ViDo gives every responsibility a precise deadline, measurable progress percentage, a clear owner, and a chronological checkpoint history. Individuals stay focused in a calm, distraction-free environment while teams coordinate from a shared source of truth—without turning every status check into another meeting.
 
 > **ViDo turns “What is the status?” into a question the workspace already answers.**
 
-## Built as a Learning Journey
+---
 
-ViDo is more than a finished application. It is designed as a transparent, four-phase case study in AI-assisted software development. Each milestone will preserve its code, prompts, demonstration, and a self-contained technical article so learners can follow the product as it evolves from a minimal to-do list into a collaborative system.
+## Interactive Application Routes
 
-```text
-Minimal tasks  →  Multi-user login  →  Shared tasks + threads  →  AI recommendations
-```
+The application features a fully interactive visual foundation:
+
+- **`/` — Public Landing Page**: Universal value proposition highlighting personal tasks, household management, and serious work projects with an interactive preview frame and design principles.
+- **`/preview` — Interactive Product Demo**: A high-fidelity preview of the authenticated dashboard experience featuring:
+  - **Sticky Top Demo Banner**: Pinned announcement with left-aligned **`Back to Landing Page`** navigation.
+  - **Dark Navy Command Center**: Snapshot hero card with 4 interactive summary tiles (*Today*, *Needs Attention*, *Upcoming*, and *Done (7d)*).
+  - **Horizontal Task Rows**: Compact, scannable responsibilities with priority badges, progress bars, checkpoint counts, and modal inspectors.
+  - **Section Views**: Dedicated subroutes for `/preview/today`, `/preview/upcoming`, `/preview/needs-attention`, `/preview/completed`, and `/preview/archived`.
+- **`/style-lab` — Theme & Accent Palette Lab**: Live design system sandbox testing the primary accent palettes (`Cobalt Blue`, `Deep Indigo`, and `Forest Green`).
+
+---
 
 ## The Experience
 
@@ -40,152 +48,141 @@ Minimal tasks  →  Multi-user login  →  Shared tasks + threads  →  AI recom
 <tr>
 <td width="50%" valign="top">
 
-### 👤 My Tasks
+### 👤 Personal Responsibilities
 
-A private space for personal planning.
+A focused space for personal and household planning.
 
 - Organize individual responsibilities
 - Set exact dates and deadline times
-- Track progress from 0% to 100%
-- Keep a chronological update history
-- Separate active, overdue, and completed work
+- Track progress incrementally from 0% to 100%
+- Maintain a chronological checkpoint update history
+- Automatically separate active, overdue, and completed work
 
 </td>
 <td width="50%" valign="top">
 
-### 👥 Team Tasks
+### 👥 Shared Coordination
 
-A shared space for coordinated execution.
+A transparent space for collaborative execution.
 
-- Create focused team workspaces
-- Invite registered collaborators
-- Delegate tasks with clear ownership
-- Follow progress and threaded updates
-- Stay synchronized in real time
+- Organize focused workspaces
+- Clear assignment and ownership
+- Follow progress and checkpoint updates
+- Flag late deliveries automatically
+- Coordinated history without redundant meetings
 
 </td>
 </tr>
 </table>
 
+---
+
 ## Features
 
-### ✅ Task Management
+### ✅ Task Lifecycle & Checkpoints
+- Create, inspect, complete, and archive tasks with deterministic sample data.
+- Measure incremental progress percentage (0–100%) instead of relying on binary done/not done.
+- Timestamped progress checkpoints preserving notes, blockers, and decisions.
+- Automatic detection for overdue work and late completions.
 
-- Create, edit, complete, archive, and delete tasks
-- Set precise target dates and times
-- Measure incremental progress instead of relying on binary status
-- Detect overdue work automatically
-- Flag tasks completed after their deadlines
+### 🎯 Calm, Section-Limited Views
+- **Today's Agenda**: Responsibilities scheduled for today.
+- **Needs Attention**: Overdue or high-priority items requiring immediate focus.
+- **Upcoming Schedule**: Future responsibilities scheduled beyond today.
+- **Delivered**: Finished responsibilities with recorded completion dates and delivery timing.
+- **Archived**: Shelved tasks preserved with their complete historical audit trail.
 
-### 📝 Progress Checkpoints
+### 🎨 Design System & Theme Lab
+- Desktop-first, clean light theme with subtle borders and balanced contrast.
+- Three live accent palettes (`Cobalt Blue`, `Deep Indigo`, `Forest Green`) switchable via CSS custom properties.
+- Accessible keyboard navigation and WCAG-compliant contrast ratios.
 
-- Post timestamped task updates
-- Record the progress percentage at each checkpoint
-- Preserve comments, decisions, and blockers
-- Retain the complete history after task completion
+---
 
-### 🔐 Identity and Privacy
+## Getting Started
 
-- Authenticate securely with email and password
-- Persist user data across sessions
-- Isolate private tasks by authenticated user ID
-- Enforce access control at the database layer
+### Prerequisites
+- Node.js 18+ (Node 20+ recommended)
+- npm or pnpm
 
-### 🤝 Team Collaboration
+### Installation
 
-- Create and manage team workspaces
-- Invite members through registered email addresses
-- Assign tasks to specific collaborators
-- Monitor shared progress and updates
-- Receive real-time changes without manual refreshing
+```bash
+# Clone the repository
+git clone https://github.com/vicharanashala/ViDo.git
+cd ViDo
 
-### ✨ AI Agent — The Flagship Phase
+# Install dependencies
+npm install
 
-- Generate context-aware tasks from goals, schedules, and recent activity
-- Recommend relevant follow-up actions automatically
-- Surface deadline, dependency, and workload risks
-- Break broad goals into actionable steps
-- Summarize recent personal and team activity
-- Continuously improve recommendations using task context and progress history
-
-The embedded AI agent is ViDo’s defining capability and the most important phase of the project. Its recommendations must remain explainable and user-approved—the agent should assist decisions without silently changing tasks or assignments.
-
-### Initial AI Dataset
-
-Phase 4 will initially use a two-year household-task dataset containing **1,786 task records** across **20 recurring task types**. It includes task creation, deadline, and completion dates, providing a practical starting point for learning recurrence patterns, completion delays, deadline risk, and next-task recommendations.
-
-The dataset is a foundation for experimentation, not the final intelligence layer. ViDo will later enrich recommendations using authenticated user context, progress checkpoints, team activity, and live schedules.
-
-## How a Task Flows
-
-```mermaid
-flowchart LR
-    A[Create task] --> B[Set owner and deadline]
-    B --> C[Track progress]
-    C --> D[Post checkpoints]
-    D --> E{100% complete?}
-    E -- Not yet --> C
-    E -- Yes --> F[Record completion]
-    F --> G{Completed late?}
-    G -- Yes --> H[Add late flag]
-    G -- No --> I[Mark on time]
-    H --> J[Archive with history]
-    I --> J
+# Start development server
+npm run dev
 ```
 
-Task views are calculated from real task data:
+Visit `http://localhost:5173` in your browser.
 
-- 🟡 **Pending** — incomplete and still within the deadline
-- 🔴 **Overdue** — incomplete and past the deadline
-- 🟢 **Completed** — finished with full history and delivery timing
+---
 
-## Roadmap
+## Verification & Scripts
 
-- [ ] **Milestone 1 — Minimal Task Management Core**
-  A focused to-do experience with task lifecycle, precise deadlines, progress percentages, checkpoints, status views, completion tracking, and archiving.
+```bash
+# Run unit and integration tests (28 tests across 9 suites)
+npm test
 
-- [ ] **Milestone 2 — Authentication and Multi-User Support**
-  Secure sign-in, persistent profiles, cloud data, sessions, and strict user-level isolation.
+# Run TypeScript typecheck without emitting files
+npm run typecheck
 
-- [ ] **Milestone 3 — Shared Tasks and Team Collaboration**
-  Shared tasks across users, teams, invitations, assignment, comments, threaded replies, progress updates, and real-time synchronization.
+# Build optimized production bundle
+npm run build
 
-- [ ] **Milestone 4 — Embedded AI Agent and Recommendations** ⭐
-  The flagship milestone: context-aware task generation, workload and deadline analysis, intelligent follow-up actions, activity summaries, and a deeply integrated recommendation agent.
+# Preview production build locally
+npm run preview
+```
+
+---
+
+## Project Structure
+
+```text
+ViDo/
+├── src/
+│   ├── components/ui/         # Reusable UI primitives (Button, Badge, Card, Input, NoticeModal)
+│   ├── data/                  # Deterministic sample tasks, checkpoints, and filter logic
+│   ├── features/
+│   │   ├── landing/           # Landing page (Header, Hero, Preview, Use Cases, Footer)
+│   │   ├── style-lab/         # Live accent theme switcher and component showcase
+│   │   └── workspace/         # Authenticated dashboard preview, sidebar, topbar, views, and modals
+│   ├── test/                  # Test setup and happy-dom configuration
+│   ├── App.tsx                # Client-side router configuration (/ , /preview/*, /style-lab)
+│   └── main.tsx               # Application bootstrap and CSS entry
+├── openspec/                  # OpenSpec specifications and changes
+├── tailwind.config.js / CSS   # Tailwind CSS v4 styling rules
+├── vite.config.ts             # Vite configuration with Vitest setup
+└── package.json
+```
+
+---
 
 ## Tech Stack
 
 | Layer | Technology | Purpose |
 |---|---|---|
-| Frontend | Vite + React | Fast, component-driven web experience |
-| Language | TypeScript | Safer and more maintainable application code |
-| Data | Supabase PostgreSQL | Persistent relational task and workspace data |
-| Authentication | Supabase Auth | Secure email and password identity |
-| Authorization | Row-Level Security | Server-side user and team data isolation |
-| Collaboration | Supabase Realtime | Live task and checkpoint updates |
+| **Frontend Framework** | React 19 | Declarative, component-based user interface |
+| **Bundler & Tooling** | Vite 6 | Rapid development server and optimized ESM builds |
+| **Language** | TypeScript | Strong typing, maintainability, and compile-time safety |
+| **Styling** | Tailwind CSS v4 | Utility-first, semantic CSS custom property styling |
+| **Icons** | Lucide React | Consistent, accessible iconography |
+| **Testing** | Vitest + Happy DOM + Testing Library | Fast unit and integration tests |
 
-> The frontend stack is selected. Supabase is the proposed backend direction and may evolve as development progresses.
+---
 
 ## Product Principles
 
 ```text
-Clarity over complexity      History over guesswork
-Privacy by default           Collaboration without noise
-Trustworthy foundations      AI that drives useful action
+Clarity over complexity          History over guesswork
+Privacy by default               Collaboration without noise
+Trustworthy foundations          AI that drives useful action
 ```
-
-## Project Status
-
-ViDo is currently in the **planning and product-definition phase**. The original discussion has been distilled into the product vision and four-stage roadmap; application scaffolding and Milestone 1 implementation come next.
-
-Each milestone will aim to produce:
-
-- A preserved, working code snapshot
-- A record of the important AI prompts
-- A concise build and feature-demonstration video
-- A polished technical article that stands on its own
-
-Read the complete product and learning vision in **[Idea.md](./Idea.md)**.
 
 ---
 
