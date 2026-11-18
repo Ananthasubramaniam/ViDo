@@ -13,7 +13,7 @@ A modern task-management workspace built for focused individuals and transparent
 [![Firebase](https://img.shields.io/badge/Firebase_Auth-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://firebase.google.com/)
 [![Vitest](https://img.shields.io/badge/Vitest-6E9F18?style=for-the-badge&logo=vitest&logoColor=white)](https://vitest.dev/)
 
-[Vision](./Idea.md) · [Living Concept](./concept.html) · [Folder Structure](./FOLDER_STRUCTURE.md) · [Agent Guidelines](./AGENTS.md) · [Firebase Setup](#firebase-setup--authentication) · [Tech Stack](#tech-stack) · [Getting Started](#getting-started)
+[Vision](./Idea.md) · [Living Concept](./concept.html) · [Folder Structure](./FOLDER_STRUCTURE.md) · [Agent Guidelines](./AGENTS.md) · [Firebase Testing Setup](#firebase-testing-setup) · [Tech Stack](#tech-stack) · [Getting Started](#getting-started)
 
 </div>
 
@@ -83,7 +83,7 @@ A transparent space for collaborative execution.
 
 ### 🔐 Authentication & Session Management
 - Fast, frictionless Google OAuth sign-in.
-- Dual-runtime support: automatic local Firebase Auth Emulator connection or live Firebase credentials.
+- Local testing via Firebase Auth Emulator (`localhost:9099`) with automatic Vite orchestration.
 - User-scoped workspace persistence storing tasks under each authenticated user's ID.
 - Open public interactive preview (`/preview/*`) with deterministic sample data for guests.
 
@@ -132,54 +132,26 @@ Visit `http://localhost:5173` in your browser.
 
 ---
 
-## Firebase Setup & Authentication
+## Firebase Testing Setup
 
-ViDo supports both frictionless local development (via the Firebase Auth Emulator) and live cloud deployments (via Firebase Authentication).
+ViDo uses the **Firebase Auth Emulator** for frictionless, credential-free local development and testing.
 
-### 1. Local Development (Firebase Auth Emulator)
+### Local Development & Testing
 
-No external cloud accounts or API keys are required to test authentication locally:
+No external cloud account or API keys are required to test authentication locally:
 
-- **Automatic Startup**: Running `npm run dev` automatically checks if the Firebase Auth Emulator is listening on port `9099`. If not, Vite checks for Java and Firebase CLI, and automatically launches the emulator in the background using the `demo-vido` project.
+- **Automatic Emulator Orchestration**: Running `npm run dev` automatically checks if the Firebase Auth Emulator is active on port `9099`. If not, Vite checks your local environment for Java and Firebase CLI, and automatically launches the emulator in the background with the `demo-vido` project.
 - **Prerequisites**: Ensure Java (JRE 11+) is installed (`java -version`). If the Firebase CLI is not installed globally (`npm install -g firebase-tools`), Vite runs it seamlessly via `npx`.
 - **Manual Launch** (optional): If you prefer running the emulator in a dedicated terminal:
   ```bash
   npx firebase-tools emulators:start --only auth --project demo-vido
   ```
-
-### 2. Production Setup (Live Firebase)
-
-To connect ViDo to your own live Firebase project for production:
-
-1. **Create Firebase Project**:
-   - Visit the [Firebase Console](https://console.firebase.google.com/) and create a new project.
-   - Go to **Build** > **Authentication** > **Get Started**.
-   - Under the **Sign-in method** tab, enable **Google**.
-   - Under **Authentication** > **Settings** > **Authorized domains**, add your hosting domain (e.g. `your-app.vercel.app` or custom domain).
-2. **Configure Environment Variables**:
-   - Create a `.env.local` file by copying the example:
-     ```bash
-     cp .env.example .env.local
-     ```
-   - Populate with your Firebase Web App credentials:
-     ```env
-     VITE_FIREBASE_API_KEY=AIzaSy...
-     VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-     VITE_FIREBASE_PROJECT_ID=your-project
-     VITE_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
-     VITE_FIREBASE_MESSAGING_SENDER_ID=123456789
-     VITE_FIREBASE_APP_ID=1:123456789:web:abcdef
-     VITE_USE_FIREBASE_EMULATOR=false
-     ```
-
-### 3. Production Deployment (e.g., Vercel)
-
-ViDo includes a pre-configured `vercel.json` with Single Page Application (SPA) rewrite rules so direct visits and hard refreshes on deep routes (`/workspace`, `/preview/today`, `/style-lab`) resolve to `index.html`.
-
-1. Push your repository to GitHub / GitLab.
-2. Import the project in [Vercel](https://vercel.com/).
-3. In **Project Settings** > **Environment Variables**, add your `VITE_FIREBASE_*` credentials.
-4. Deploy.
+- **Testing Sign-In in the Browser**:
+  1. Click **Sign In to Dashboard** or **Continue with Google** on the landing page (`/`).
+  2. The Firebase Auth Emulator popup opens, allowing you to sign in with any mock user email or name.
+  3. You are redirected into `/workspace`, where tasks you create are stored in your browser's local storage scoped to your mock user ID.
+  4. Clicking **Sign Out** returns you to the landing page and clears the session.
+- **Automated Test Suite**: Running `npm test` executes the complete test suite with mocked auth handlers (requires no running emulator or network access).
 
 ---
 
