@@ -18,15 +18,22 @@ ViDo/
 │   ├── components/ui/       # Domain-agnostic reusable UI primitives (Button, Card, Badge, etc.)
 │   ├── data/                # Data types, deterministic fixtures, pure filtering & logic
 │   ├── features/            # Vertical slices of user-facing functionality
+│   │   ├── auth/            # Auth provider and session state
 │   │   ├── landing/         # Public landing page (/ route)
 │   │   ├── style-lab/       # Theme, accent palette, and visual lab (/style-lab route)
-│   │   └── workspace/       # Authenticated dashboard preview (/preview route)
+│   │   └── workspace/       # Dashboard shell for the live app (/workspace) and demo (/preview)
 │   │       └── views/       # Subroute view components (Home, Today, Upcoming, etc.)
+│   ├── lib/                 # Firebase init, auth helpers, Firestore task store
 │   ├── test/                # Global test setup and environment configuration
 │   ├── App.tsx              # Central client-side routing
 │   ├── index.css            # Global CSS variables, theme variables, and Tailwind v4 setup
 │   ├── main.tsx             # Application bootstrap & DOM mount
 │   └── vite-env.d.ts        # Vite TypeScript type declarations
+├── .env.example             # Firebase/emulator environment overrides
+├── .firebaserc              # Firebase project alias (demo-vido)
+├── firebase.json            # Emulator ports and rules/index references
+├── firestore.rules          # Per-user Firestore security rules
+├── firestore.indexes.json   # Firestore composite indexes
 ├── .gitignore               # Ignored build artifacts, dependencies, and caches
 ├── AGENTS.md                # AI Agent guidelines and execution standards
 ├── FOLDER_STRUCTURE.md      # This file: Directory layout and placement rules

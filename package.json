@@ -10,7 +10,10 @@
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "emulators": "firebase emulators:start --only auth"
+    "emulators": "firebase emulators:start --project demo-vido",
+    "emu": "firebase emulators:start --project demo-vido",
+    "emu:export": "firebase emulators:export ./firebase-export-local --project demo-vido",
+    "emu:import": "firebase emulators:start --import ./firebase-export-local --export-on-exit --project demo-vido"
   },
   "dependencies": {
     "firebase": "^13.4.0",
