@@ -7,9 +7,15 @@ export interface TaskDetailModalProps {
   task: SampleTask | null;
   isOpen: boolean;
   onClose: () => void;
+  onToggleTask?: (task: SampleTask) => void;
 }
 
-export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, isOpen, onClose }) => {
+export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
+  task,
+  isOpen,
+  onClose,
+  onToggleTask,
+}) => {
   const closeBtnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -186,12 +192,18 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, isOpen, 
 
         {/* Footer Actions */}
         <div className="mt-6 pt-4 border-t border-[var(--line)] flex items-center justify-between gap-3">
-          <span className="text-[10px] text-[var(--muted)]">ViDo Task Details</span>
-          <div className="flex items-center gap-2">
-            <Button variant="secondary" size="sm" onClick={onClose}>
-              Close
+          {onToggleTask && task && (
+            <Button
+              variant={isCompleted ? 'secondary' : 'primary'}
+              size="sm"
+              onClick={() => onToggleTask(task)}
+            >
+              {isCompleted ? 'Reopen Task' : 'Mark as Complete'}
             </Button>
-          </div>
+          )}
+          <Button variant="secondary" size="sm" onClick={onClose}>
+            Close
+          </Button>
         </div>
       </div>
     </div>

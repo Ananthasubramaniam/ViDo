@@ -1,13 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button, Input } from '../../components/ui';
+import { SampleTask } from '../../data/sampleTasks';
 import { X, Tag, CheckCircle2 } from 'lucide-react';
 
 export interface TaskCreateModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onCreateTask?: (task: SampleTask) => void;
 }
 
-export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ isOpen, onClose }) => {
+export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
+  isOpen,
+  onClose,
+  onCreateTask,
+}) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('2026-11-17');
@@ -37,7 +43,39 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ isOpen, onClos
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
+
+    const newTask: SampleTask = {
+      id: `task-${Date.now()}`,
+      title: title.trim(),
+      description: description.trim() || undefined,
+      dueDate: dueDate || '2026-11-17',
+      dueTime: dueTime || '18:00',
+      priority: (priority as 'high' | 'medium' | 'low') || undefined,
+      state: 'active',
+      category,
+      createdAt: '2026-11-17T12:00:00Z',
+      checkpoints: [
+        {
+          id: `cp-${Date.now()}`,
+          timestamp: '2026-11-17T12:00:00Z',
+          note: 'Task initialized in workspace.',
+        },
+      ],
+    };
+
     setSubmittedNotice(true);
+    onCreateTask?.(newTask);
+
+    // Reset inputs
+    setTitle('');
+    setDescription('');
+    setDueDate('2026-11-17');
+    setDueTime('17:00');
+    setPriority('medium');
+    setCategory('personal');
+
+    // Close the popup so it does not remain stuck open
+    onClose();
   };
 
   return (

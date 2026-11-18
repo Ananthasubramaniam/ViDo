@@ -11,10 +11,11 @@ import { TaskDetailModal } from './TaskDetailModal';
 import { TaskCreateModal } from './TaskCreateModal';
 
 export const WorkspaceLayout: React.FC = () => {
-  const [tasks] = useState<SampleTask[]>(SAMPLE_TASKS);
+  const [tasks, setTasks] = useState<SampleTask[]>(SAMPLE_TASKS);
   const [selectedTask, setSelectedTask] = useState<SampleTask | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const views = getFilteredTasks(tasks);
   const dashboard = getHomeDashboardTasks(tasks);
@@ -24,6 +25,54 @@ export const WorkspaceLayout: React.FC = () => {
   const handleTaskClick = (task: SampleTask) => {
     setSelectedTask(task);
     setIsDetailOpen(true);
+  };
+
+  const handleCreateTask = (newTask: SampleTask) => {
+    setTasks((prev) => [newTask, ...prev]);
+    setToastMessage(`Task "${newTask.title}" added to your workspace.`);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  const handleToggleTask = (taskToToggle: SampleTask) => {
+    const isNowCompleted = taskToToggle.state !== 'completed';
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === taskToToggle.id
+          ? {
+              ...t,
+              state: isNowCompleted ? 'completed' : 'active',
+              completedAt: isNowCompleted ? '2026-11-17T12:00:00Z' : undefined,
+              checkpoints: [
+                ...(t.checkpoints || []),
+                {
+                  id: `cp-${Date.now()}`,
+                  timestamp: '2026-11-17T12:00:00Z',
+                  note: isNowCompleted
+                    ? 'Task marked as completed.'
+                    : 'Task reopened in workspace.',
+                },
+              ],
+            }
+          : t
+      )
+    );
+    if (selectedTask && selectedTask.id === taskToToggle.id) {
+      setSelectedTask((prev) =>
+        prev
+          ? {
+              ...prev,
+              state: isNowCompleted ? 'completed' : 'active',
+              completedAt: isNowCompleted ? '2026-11-17T12:00:00Z' : undefined,
+            }
+          : null
+      );
+    }
+    setToastMessage(
+      isNowCompleted
+        ? `Task "${taskToToggle.title}" marked as completed!`
+        : `Task "${taskToToggle.title}" reopened.`
+    );
+    setTimeout(() => setToastMessage(null), 3000);
   };
 
   const getHeaderInfo = () => {
@@ -180,12 +229,35 @@ export const WorkspaceLayout: React.FC = () => {
           setIsDetailOpen(false);
           setSelectedTask(null);
         }}
+        onToggleTask={handleToggleTask}
       />
 
       <TaskCreateModal
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
+        onCreateTask={handleCreateTask}
       />
+
+      {/* Floating Confirmation Toast */}
+      {toastMessage && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-6 right-6 z-50 bg-[var(--dark)] text-white px-4 py-3 rounded-xl shadow-2xl border border-white/20 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 duration-200"
+        >
+          <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs shrink-0">
+            ✓
+          </div>
+          <p className="text-xs font-medium text-gray-100">{toastMessage}</p>
+          <button
+            onClick={() => setToastMessage(null)}
+            className="text-gray-400 hover:text-white text-xs ml-2 cursor-pointer"
+            aria-label="Dismiss notification"
+          >
+            ✕
+          </button>
+        </div>
+      )}
     </div>
   );
 };

@@ -95,10 +95,17 @@ describe('Workspace Views and Modals', () => {
   });
 
   describe('TaskCreateModal', () => {
-    it('validates form submission and shows success confirmation', () => {
+    it('validates form submission, creates task and triggers close', () => {
       const handleClose = vi.fn();
+      const handleCreate = vi.fn();
 
-      render(<TaskCreateModal isOpen={true} onClose={handleClose} />);
+      render(
+        <TaskCreateModal
+          isOpen={true}
+          onClose={handleClose}
+          onCreateTask={handleCreate}
+        />
+      );
 
       expect(screen.getByRole('heading', { name: /create new task/i })).toBeInTheDocument();
 
@@ -108,7 +115,14 @@ describe('Workspace Views and Modals', () => {
       const saveBtn = screen.getByRole('button', { name: /save task/i });
       fireEvent.click(saveBtn);
 
-      expect(screen.getByText(/task successfully saved/i)).toBeInTheDocument();
+      expect(handleCreate).toHaveBeenCalledTimes(1);
+      expect(handleCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'New Test Task',
+          state: 'active',
+        })
+      );
+      expect(handleClose).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -132,6 +146,37 @@ describe('Workspace Views and Modals', () => {
 
       // Sidebar links exist
       expect(screen.getByRole('link', { name: /home/i })).toBeInTheDocument();
+    });
+
+    it('creates a task and displays it in the view when New Task form is submitted', () => {
+      render(
+        <MemoryRouter initialEntries={['/preview/today']}>
+          <Routes>
+            <Route path="/preview/*" element={<WorkspaceLayout />} />
+          </Routes>
+        </MemoryRouter>
+      );
+
+      // Open modal via sidebar New Task button
+      const newTaskBtn = screen.getByRole('button', { name: /new task/i });
+      fireEvent.click(newTaskBtn);
+
+      expect(screen.getByRole('heading', { name: /create new task/i })).toBeInTheDocument();
+
+      // Enter task title
+      const titleInput = screen.getByLabelText(/task title \*/i);
+      fireEvent.change(titleInput, { target: { value: 'Buy Groceries for Dinner' } });
+
+      // Submit form
+      const saveBtn = screen.getByRole('button', { name: /save task/i });
+      fireEvent.click(saveBtn);
+
+      // Modal is closed
+      expect(screen.queryByRole('heading', { name: /create new task/i })).not.toBeInTheDocument();
+
+      // New task appears in view and toast is shown
+      expect(screen.getByText('Buy Groceries for Dinner')).toBeInTheDocument();
+      expect(screen.getByText(/task "buy groceries for dinner" added/i)).toBeInTheDocument();
     });
   });
 });
