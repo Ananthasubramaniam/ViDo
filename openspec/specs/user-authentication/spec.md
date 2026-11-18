@@ -38,3 +38,4 @@ The system SHALL display the authenticated user's profile details and provide an
 #### Scenario: User Sign Out
 - **WHEN** authenticated user clicks "Sign Out" in workspace
 - **THEN** system terminates user session, clears active session state, and redirects user to public landing page
+

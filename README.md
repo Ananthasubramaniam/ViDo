@@ -10,9 +10,10 @@ A modern task-management workspace built for focused individuals and transparent
 [![React](https://img.shields.io/badge/React_19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS_v4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![Firebase](https://img.shields.io/badge/Firebase_Auth-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://firebase.google.com/)
 [![Vitest](https://img.shields.io/badge/Vitest-6E9F18?style=for-the-badge&logo=vitest&logoColor=white)](https://vitest.dev/)
 
-[Vision](./Idea.md) · [Living Concept](./concept.html) · [Folder Structure](./FOLDER_STRUCTURE.md) · [Agent Guidelines](./AGENTS.md) · [Tech Stack](#tech-stack) · [Getting Started](#getting-started)
+[Vision](./Idea.md) · [Living Concept](./concept.html) · [Folder Structure](./FOLDER_STRUCTURE.md) · [Agent Guidelines](./AGENTS.md) · [Firebase Setup](#firebase-setup--authentication) · [Tech Stack](#tech-stack) · [Getting Started](#getting-started)
 
 </div>
 
@@ -32,8 +33,9 @@ ViDo gives every responsibility a precise deadline, measurable progress percenta
 
 The application features a fully interactive visual foundation:
 
-- **`/` — Public Landing Page**: Universal value proposition highlighting personal tasks, household management, and serious work projects with an interactive preview frame and design principles.
-- **`/preview` — Interactive Product Demo**: A high-fidelity preview of the authenticated dashboard experience featuring:
+- **`/` — Public Landing Page**: Universal value proposition highlighting personal tasks, household management, and serious work projects with an interactive preview frame, sign-in dialog, and design principles.
+- **`/workspace` — Authenticated Workspace**: The full personal workspace powered by Google OAuth via Firebase Authentication. Features user-scoped task persistence, profile badge, and sign-out controls.
+- **`/preview` — Interactive Product Demo**: A high-fidelity preview of the workspace experience using deterministic sample data (`Demo User`), accessible without signing in:
   - **Sticky Top Demo Banner**: Pinned announcement with left-aligned **`Back to Landing Page`** navigation.
   - **Dark Navy Command Center**: Snapshot hero card with 4 interactive summary tiles (*Today*, *Needs Attention*, *Upcoming*, and *Done (7d)*).
   - **Horizontal Task Rows**: Compact, scannable responsibilities with priority badges, progress bars, checkpoint counts, and modal inspectors.
@@ -79,6 +81,12 @@ A transparent space for collaborative execution.
 
 ## Features
 
+### 🔐 Authentication & Session Management
+- Fast, frictionless Google OAuth sign-in.
+- Dual-runtime support: automatic local Firebase Auth Emulator connection or live Firebase credentials.
+- User-scoped workspace persistence storing tasks under each authenticated user's ID.
+- Open public interactive preview (`/preview/*`) with deterministic sample data for guests.
+
 ### ✅ Task Lifecycle & Checkpoints
 - Create, inspect, complete, and archive tasks with deterministic sample data.
 - Measure incremental progress percentage (0–100%) instead of relying on binary done/not done.
@@ -102,8 +110,9 @@ A transparent space for collaborative execution.
 ## Getting Started
 
 ### Prerequisites
-- Node.js 18+ (Node 20+ recommended)
-- npm or pnpm
+- **Node.js 18+** (Node 20+ recommended)
+- **npm** or **pnpm**
+- *(Optional for local auth emulator)*: **Java JRE 11+** (`java -version`) for running the Firebase Emulator Suite locally
 
 ### Installation
 
@@ -123,10 +132,61 @@ Visit `http://localhost:5173` in your browser.
 
 ---
 
+## Firebase Setup & Authentication
+
+ViDo supports both frictionless local development (via the Firebase Auth Emulator) and live cloud deployments (via Firebase Authentication).
+
+### 1. Local Development (Firebase Auth Emulator)
+
+No external cloud accounts or API keys are required to test authentication locally:
+
+- **Automatic Startup**: Running `npm run dev` automatically checks if the Firebase Auth Emulator is listening on port `9099`. If not, Vite checks for Java and Firebase CLI, and automatically launches the emulator in the background using the `demo-vido` project.
+- **Prerequisites**: Ensure Java (JRE 11+) is installed (`java -version`). If the Firebase CLI is not installed globally (`npm install -g firebase-tools`), Vite runs it seamlessly via `npx`.
+- **Manual Launch** (optional): If you prefer running the emulator in a dedicated terminal:
+  ```bash
+  npx firebase-tools emulators:start --only auth --project demo-vido
+  ```
+
+### 2. Production Setup (Live Firebase)
+
+To connect ViDo to your own live Firebase project for production:
+
+1. **Create Firebase Project**:
+   - Visit the [Firebase Console](https://console.firebase.google.com/) and create a new project.
+   - Go to **Build** > **Authentication** > **Get Started**.
+   - Under the **Sign-in method** tab, enable **Google**.
+   - Under **Authentication** > **Settings** > **Authorized domains**, add your hosting domain (e.g. `your-app.vercel.app` or custom domain).
+2. **Configure Environment Variables**:
+   - Create a `.env.local` file by copying the example:
+     ```bash
+     cp .env.example .env.local
+     ```
+   - Populate with your Firebase Web App credentials:
+     ```env
+     VITE_FIREBASE_API_KEY=AIzaSy...
+     VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+     VITE_FIREBASE_PROJECT_ID=your-project
+     VITE_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+     VITE_FIREBASE_MESSAGING_SENDER_ID=123456789
+     VITE_FIREBASE_APP_ID=1:123456789:web:abcdef
+     VITE_USE_FIREBASE_EMULATOR=false
+     ```
+
+### 3. Production Deployment (e.g., Vercel)
+
+ViDo includes a pre-configured `vercel.json` with Single Page Application (SPA) rewrite rules so direct visits and hard refreshes on deep routes (`/workspace`, `/preview/today`, `/style-lab`) resolve to `index.html`.
+
+1. Push your repository to GitHub / GitLab.
+2. Import the project in [Vercel](https://vercel.com/).
+3. In **Project Settings** > **Environment Variables**, add your `VITE_FIREBASE_*` credentials.
+4. Deploy.
+
+---
+
 ## Verification & Scripts
 
 ```bash
-# Run unit and integration tests (28 tests across 9 suites)
+# Run unit and integration tests (38 tests across 10 suites)
 npm test
 
 # Run TypeScript typecheck without emitting files
@@ -151,15 +211,17 @@ ViDo/
 │   ├── components/ui/         # Reusable UI primitives (Button, Badge, Card, Input, NoticeModal)
 │   ├── data/                  # Deterministic sample tasks, checkpoints, and filter logic
 │   ├── features/
+│   │   ├── auth/              # Firebase client, AuthContext, user session, and Google sign-in
 │   │   ├── landing/           # Landing page (Header, Hero, Preview, Use Cases, Footer)
 │   │   ├── style-lab/         # Live accent theme switcher and component showcase
 │   │   └── workspace/         # Authenticated dashboard preview, sidebar, topbar, views, and modals
 │   ├── test/                  # Test setup and happy-dom configuration
-│   ├── App.tsx                # Client-side router configuration (/ , /preview/*, /style-lab)
+│   ├── App.tsx                # Client-side router configuration (/ , /workspace, /preview/*, /style-lab)
 │   └── main.tsx               # Application bootstrap and CSS entry
-├── openspec/                  # OpenSpec specifications and changes
+├── openspec/                  # OpenSpec specifications and archived changes
+├── vercel.json                # Vercel SPA routing configuration
 ├── tailwind.config.js / CSS   # Tailwind CSS v4 styling rules
-├── vite.config.ts             # Vite configuration with Vitest setup
+├── vite.config.ts             # Vite configuration with automatic Firebase emulator lifecycle and Vitest
 └── package.json
 ```
 
@@ -170,7 +232,8 @@ ViDo/
 | Layer | Technology | Purpose |
 |---|---|---|
 | **Frontend Framework** | React 19 | Declarative, component-based user interface |
-| **Bundler & Tooling** | Vite 6 | Rapid development server and optimized ESM builds |
+| **Authentication** | Firebase 12 (Auth) | Google OAuth with emulator fallback and session management |
+| **Bundler & Tooling** | Vite 6 | Rapid development server, automated emulator check, and ESM builds |
 | **Language** | TypeScript | Strong typing, maintainability, and compile-time safety |
 | **Styling** | Tailwind CSS v4 | Utility-first, semantic CSS custom property styling |
 | **Icons** | Lucide React | Consistent, accessible iconography |
