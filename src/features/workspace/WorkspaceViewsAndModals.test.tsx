@@ -48,6 +48,92 @@ describe('Workspace Views and Modals', () => {
       fireEvent.click(taskRow);
       expect(handleClick).toHaveBeenCalled();
     });
+
+    it('supports dynamic filter addition, pill removal, and clear all filters in Tasks tab', () => {
+      render(
+        <MemoryRouter>
+          <HomeView tasks={SAMPLE_TASKS} onTaskClick={vi.fn()} initialTab="tasks" />
+        </MemoryRouter>
+      );
+
+      // Default state has Today filter pill
+      expect(screen.getByText(/status: today's agenda/i)).toBeInTheDocument();
+
+      // Open Add Filter menu
+      const addFilterBtn = screen.getByRole('button', { name: /add filter/i });
+      fireEvent.click(addFilterBtn);
+
+      // Select Personal category
+      const personalOption = screen.getByRole('button', { name: /^personal$/i });
+      fireEvent.click(personalOption);
+
+      // Verify Personal category filter pill is added
+      expect(screen.getByText(/category: personal/i)).toBeInTheDocument();
+
+      // Open Add Filter menu again
+      fireEvent.click(addFilterBtn);
+
+      // Select High Priority
+      const highPriorityOption = screen.getByRole('button', { name: /high priority/i });
+      fireEvent.click(highPriorityOption);
+
+      // Verify Priority filter pill is added
+      expect(screen.getByText(/priority: high/i)).toBeInTheDocument();
+
+      // Click Clear all
+      const clearAllBtn = screen.getByRole('button', { name: /clear all/i });
+      fireEvent.click(clearAllBtn);
+
+      // Verify all filter pills are cleared
+      expect(screen.queryByText(/category: personal/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/priority: high/i)).not.toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /tasks/i })).toBeInTheDocument();
+    });
+
+    it('switches between Dashboard and Tasks tabs seamlessly', () => {
+      render(
+        <MemoryRouter>
+          <HomeView tasks={SAMPLE_TASKS} onTaskClick={vi.fn()} />
+        </MemoryRouter>
+      );
+
+      // Initially on Dashboard
+      expect(screen.getByText(/welcome back, demo user/i)).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /add filter/i })).not.toBeInTheDocument();
+
+      // Click Tasks tab
+      const tasksTab = screen.getByRole('tab', { name: /tasks/i });
+      fireEvent.click(tasksTab);
+
+      // Now on Tasks view
+      expect(screen.getByRole('button', { name: /add filter/i })).toBeInTheDocument();
+      expect(screen.queryByText(/welcome back, demo user/i)).not.toBeInTheDocument();
+
+      // Click Dashboard tab
+      const dashboardTab = screen.getByRole('tab', { name: /dashboard/i });
+      fireEvent.click(dashboardTab);
+
+      // Back to Dashboard
+      expect(screen.getByText(/welcome back, demo user/i)).toBeInTheDocument();
+    });
+
+    it('does not show completed tasks in the tasks section', () => {
+      render(
+        <MemoryRouter>
+          <HomeView tasks={SAMPLE_TASKS} onTaskClick={vi.fn()} initialTab="tasks" />
+        </MemoryRouter>
+      );
+
+      // Verify active task is shown
+      expect(screen.getByText(/review q4 budget/i)).toBeInTheDocument();
+
+      // Verify completed tasks are strictly excluded from the tasks section
+      const completedTasks = SAMPLE_TASKS.filter((t) => t.state === 'completed');
+      expect(completedTasks.length).toBeGreaterThan(0);
+      completedTasks.forEach((task) => {
+        expect(screen.queryByText(task.title)).not.toBeInTheDocument();
+      });
+    });
   });
 
   describe('ListView Rendering and Category Filtering', () => {
@@ -144,8 +230,9 @@ describe('Workspace Views and Modals', () => {
       expect(screen.getByText(/interactive demo:/i)).toBeInTheDocument();
       expect(screen.getByRole('link', { name: /back to landing page/i })).toHaveAttribute('href', '/');
 
-      // Sidebar links exist
-      expect(screen.getByRole('link', { name: /home/i })).toBeInTheDocument();
+      // Sidebar two primary tabs exist: Dashboard and Tasks
+      expect(screen.getByRole('link', { name: /dashboard/i })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /tasks/i })).toBeInTheDocument();
     });
 
     it('creates a task and displays it in the view when New Task form is submitted', () => {

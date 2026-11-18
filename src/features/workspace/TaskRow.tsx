@@ -6,9 +6,10 @@ import { Clock, AlertCircle, CheckCircle2, ChevronRight, MessageSquare } from 'l
 export interface TaskRowProps {
   task: SampleTask;
   onClick: (task: SampleTask) => void;
+  onToggle?: (task: SampleTask) => void;
 }
 
-export const TaskRow: React.FC<TaskRowProps> = ({ task, onClick }) => {
+export const TaskRow: React.FC<TaskRowProps> = ({ task, onClick, onToggle }) => {
   const isCompleted = task.state === 'completed';
   const isOverdue = task.state === 'active' && task.dueDate < '2026-11-17';
   const isDueToday = task.state === 'active' && task.dueDate === '2026-11-17';
@@ -29,7 +30,21 @@ export const TaskRow: React.FC<TaskRowProps> = ({ task, onClick }) => {
     >
       {/* Left: Status icon, Title, Category */}
       <div className="flex items-center gap-3.5 min-w-0">
-        <div className="shrink-0 mt-0.5 sm:mt-0">
+        <button
+          type="button"
+          onClick={(e) => {
+            if (onToggle) {
+              e.stopPropagation();
+              onToggle(task);
+            }
+          }}
+          aria-label={
+            isCompleted
+              ? `Mark "${task.title}" as active`
+              : `Mark "${task.title}" as completed`
+          }
+          className="shrink-0 mt-0.5 sm:mt-0 cursor-pointer focus:outline-none"
+        >
           {isCompleted ? (
             <div className="w-5 h-5 rounded-full bg-[var(--green-soft)] text-[var(--green)] flex items-center justify-center">
               <CheckCircle2 className="w-4 h-4" />
@@ -41,7 +56,7 @@ export const TaskRow: React.FC<TaskRowProps> = ({ task, onClick }) => {
           ) : (
             <div className="w-5 h-5 rounded-full border-2 border-[var(--line)] group-hover:border-[var(--accent)] transition-colors" />
           )}
-        </div>
+        </button>
 
         <div className="min-w-0">
           <div className="flex items-center gap-2">

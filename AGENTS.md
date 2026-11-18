@@ -78,4 +78,5 @@ npm run build
 1. ❌ **Do not bypass `FOLDER_STRUCTURE.md`** by creating temporary or duplicate utility folders.
 2. ❌ **Do not remove or weaken existing tests** to make a command pass.
 3. ❌ **Do not commit secrets, environment variables, or build folders** (`.env`, `dist/`, `node_modules/`).
-4. ❌ **Do not hardcode Windows backslashes** in markdown links; always format file links with forward slashes (e.g. `[link text](file:///path/to/file)`).
+4. ❌ **Do not push code to remote repositories (`git push`)**: AI agents are strictly forbidden from running `git push` unless the user explicitly requests a push. The user reviews and finalizes changes manually before anything is pushed.
+5. ❌ **Do not hardcode Windows backslashes** in markdown links; always format file links with forward slashes (e.g. `[link text](file:///path/to/file)`).

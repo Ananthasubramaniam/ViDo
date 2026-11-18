@@ -12,7 +12,7 @@ describe('WorkspaceSidebar', () => {
     archived: 2,
   };
 
-  it('renders all navigation items and count badges', () => {
+  it('renders the two primary tabs: Dashboard and Tasks with count badge, and omits sub-views', () => {
     render(
       <MemoryRouter initialEntries={['/preview']}>
         <WorkspaceSidebar counts={mockCounts} />
@@ -21,12 +21,19 @@ describe('WorkspaceSidebar', () => {
 
     expect(screen.getByText('DEMO')).toBeInTheDocument();
     expect(screen.getByText('Logged-in demo preview')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /home/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /today 6/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /needs attention 4/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /upcoming 5/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /completed 5/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /archived 2/i })).toBeInTheDocument();
+    
+    // Exactly TWO primary tabs in the navigation panel: Dashboard and Tasks
+    expect(screen.getByRole('link', { name: /dashboard/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /tasks 15/i })).toBeInTheDocument();
+
+    // Verify the 5 individual options are removed from the left panel
+    expect(screen.queryByRole('link', { name: /^today/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^needs attention/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^upcoming/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^completed/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^archived/i })).not.toBeInTheDocument();
+
+    // Footer links remain
     expect(screen.getByRole('link', { name: /themes/i })).toBeInTheDocument();
   });
 

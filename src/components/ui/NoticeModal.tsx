@@ -8,6 +8,7 @@ export interface NoticeModalProps {
   onClose: () => void;
   title?: string;
   description?: string;
+  onSignIn?: () => void;
 }
 
 export const NoticeModal: React.FC<NoticeModalProps> = ({
@@ -15,6 +16,7 @@ export const NoticeModal: React.FC<NoticeModalProps> = ({
   onClose,
   title = 'Sign In to ViDo',
   description = 'You can enter and explore your workspace directly right now without needing to configure Google authentication.',
+  onSignIn,
 }) => {
   const navigate = useNavigate();
 
@@ -62,12 +64,12 @@ export const NoticeModal: React.FC<NoticeModalProps> = ({
           </div>
         </div>
 
-        <div className="mt-6 pt-4 border-t border-[var(--line)] flex items-center justify-end gap-3">
-          <Button variant="secondary" size="sm" onClick={onClose}>
+        <div className="mt-6 pt-4 border-t border-[var(--line)] flex flex-wrap items-center justify-end gap-2.5">
+          <Button variant="ghost" size="sm" onClick={onClose}>
             Back
           </Button>
           <Button
-            variant="primary"
+            variant="secondary"
             size="sm"
             onClick={() => {
               onClose();
@@ -75,6 +77,20 @@ export const NoticeModal: React.FC<NoticeModalProps> = ({
             }}
           >
             Enter Live Preview <ArrowRight className="w-3.5 h-3.5 ml-1" />
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => {
+              onClose();
+              if (onSignIn) {
+                onSignIn();
+              } else {
+                navigate('/workspace');
+              }
+            }}
+          >
+            Sign In to Dashboard <ArrowRight className="w-3.5 h-3.5 ml-1" />
           </Button>
         </div>
       </div>
