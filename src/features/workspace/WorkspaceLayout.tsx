@@ -40,21 +40,6 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
       ? explicitIsPreview
       : location.pathname.startsWith('/preview');
 
-  if (!isPreview && loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--canvas)] text-[var(--muted)] text-sm">
-        <div className="flex items-center gap-2.5">
-          <div className="w-4 h-4 rounded-full border-2 border-[var(--accent)] border-t-transparent animate-spin" />
-          <span>Verifying authentication...</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isPreview && !authUser) {
-    return <Navigate to="/" replace />;
-  }
-
   const basePath = isPreview ? '/preview' : '/workspace';
 
   const user = isPreview
@@ -80,13 +65,14 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   };
 
   useEffect(() => {
+    if (!isPreview && loading) return;
     void loadTeams();
     const handleFocus = () => {
       void loadTeams();
     };
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
-  }, [user.id, user.email]);
+  }, [user.id, user.email, isPreview, loading]);
 
   // Task state: for preview, use SAMPLE_TASKS. For authenticated users, scope to user ID.
   const userStorageKey = authUser ? `vido_tasks_${authUser.uid}` : 'vido_live_workspace_tasks';
@@ -144,6 +130,22 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
 
   const views = getFilteredTasks(tasks);
   const dashboard = getHomeDashboardTasks(tasks);
+
+  // Authentication guards: evaluated AFTER all hooks have executed unconditionally
+  if (!isPreview && loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--canvas)] text-[var(--muted)] text-sm">
+        <div className="flex items-center gap-2.5">
+          <div className="w-4 h-4 rounded-full border-2 border-[var(--accent)] border-t-transparent animate-spin" />
+          <span>Verifying authentication...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isPreview && !authUser) {
+    return <Navigate to="/" replace />;
+  }
 
   const handleTaskClick = (task: SampleTask) => {
     setSelectedTask(task);
