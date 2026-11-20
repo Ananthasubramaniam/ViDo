@@ -28,7 +28,8 @@ You must strictly maintain the directory structure documented in `FOLDER_STRUCTU
   - `src/features/workspace/` — Dashboard shell shared by the live workspace (`/workspace`) and the demo (`/preview`).
   - `src/features/style-lab/` — Theme and palette lab (`/style-lab`).
 - **Data & Pure Logic**: Place data models, types, sample fixtures, and pure filtering/calculation functions in `src/data/`.
-- **Firebase & Persistence**: Keep Firebase initialization, auth helpers, and Firestore task reads/writes in `src/lib/` (never inside view components).
+- **Firebase & Persistence**: Keep Firebase initialization, auth helpers, and Firestore task/calendar/target reads and writes in `src/lib/` (never inside view components).
+- **Backend Service (`server/`)**: Place backend controllers, services, DTOs, and Prisma schemas inside `server/`.
 - **Tests**: Colocate tests alongside the files they verify (e.g., `TaskRow.tsx` -> `TaskRow.test.tsx` or `src/features/workspace/WorkspaceViewsAndModals.test.tsx`).
 - **Never create loose folders in the project root**: Root is strictly for configuration files and top-level documentation markdown.
 - **Never dump ad-hoc files in `src/`**: Only `App.tsx`, `main.tsx`, `index.css`, and `vite-env.d.ts` belong directly in `src/`.
@@ -74,6 +75,7 @@ npm test
 # 3. Production Build: Must compile cleanly without errors
 npm run build
 ```
+(If the backend service is in scope for your change, also run `npm run build:server`.)
 
 ---
 

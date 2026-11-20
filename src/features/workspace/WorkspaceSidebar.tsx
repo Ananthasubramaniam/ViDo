@@ -8,13 +8,16 @@ import {
   Palette,
   Plus,
   LogOut,
+  Users,
 } from 'lucide-react';
 import { Button } from '../../components/ui';
+import { Team } from '../teams/types';
 
 export interface WorkspaceSidebarProps {
   isPreview?: boolean;
   basePath?: string;
   user?: {
+    id?: string;
     name: string;
     email?: string;
   };
@@ -26,7 +29,9 @@ export interface WorkspaceSidebarProps {
     completed: number;
     archived: number;
   };
+  teams?: Team[];
   onNewTaskClick?: () => void;
+  onCreateTeamClick?: () => void;
   onSignOut?: () => void;
 }
 
@@ -35,11 +40,13 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
   basePath = '/preview',
   user,
   counts,
+  teams = [],
   onNewTaskClick,
+  onCreateTeamClick,
   onSignOut,
 }) => {
   const totalTasks =
-    counts.total ?? (counts.today + counts.upcoming + counts.needsAttention);
+    counts.total ?? counts.today + counts.upcoming + counts.needsAttention;
 
   const dashboardPath = basePath;
   const tasksPath = `${basePath}/tasks`;
@@ -139,6 +146,65 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
             </div>
           </NavLink>
         </nav>
+
+        {/* Teams & Shared Projects Section */}
+        <div className="mt-6">
+          <div className="flex items-center justify-between text-[10px] uppercase font-bold tracking-wider text-gray-400 mb-2 px-2.5">
+            <span>Teams & Shared Projects</span>
+            {onCreateTeamClick && (
+              <button
+                type="button"
+                onClick={onCreateTeamClick}
+                className="hover:text-white transition-colors p-0.5 rounded cursor-pointer text-gray-400"
+                title="Create Team"
+                aria-label="Create team workspace"
+              >
+                <Plus className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          <div className="space-y-1">
+            {teams && teams.length > 0 ? (
+              teams.map((team) => (
+                <NavLink
+                  key={team.id}
+                  to={`${basePath}/team/${team.id}`}
+                  className={({ isActive }) =>
+                    `flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                      isActive
+                        ? 'bg-white/15 text-white shadow-xs'
+                        : 'text-gray-300 hover:bg-white/8 hover:text-white'
+                    }`
+                  }
+                >
+                  <div className="flex items-center gap-2.5 truncate">
+                    <Users className="w-4 h-4 text-sky-400 shrink-0" />
+                    <span className="truncate">{team.name}</span>
+                  </div>
+                  {team.leadId === (user?.id || 'demo-user-1') && (
+                    <span className="text-[9px] font-mono px-1.5 py-0.5 bg-sky-500/20 text-sky-300 rounded font-bold shrink-0">
+                      LEAD
+                    </span>
+                  )}
+                </NavLink>
+              ))
+            ) : (
+              <div className="px-3 py-2 text-xs text-gray-400 italic">No teams yet</div>
+            )}
+
+            {onCreateTeamClick && (
+              <button
+                type="button"
+                onClick={onCreateTeamClick}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-gray-300 hover:bg-white/8 hover:text-white transition-colors cursor-pointer text-left"
+              >
+                <Plus className="w-3.5 h-3.5 text-sky-400" />
+                <span>Create Team</span>
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Footer Navigation */}

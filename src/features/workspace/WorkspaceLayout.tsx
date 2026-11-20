@@ -6,6 +6,7 @@ import {
   useNavigate,
   Link,
   Navigate,
+  useParams,
 } from 'react-router-dom';
 import { AlertCircle, ArrowLeft } from 'lucide-react';
 import {
@@ -15,7 +16,6 @@ import {
 } from '../../data/sampleTasks';
 import { getFilteredTasks, getHomeDashboardTasks } from '../../data/taskFilters';
 import { todayISO } from '../../data/calendar';
-import { useAuth } from '../auth';
 import { WorkspaceSidebar } from './WorkspaceSidebar';
 import { WorkspaceTopBar } from './WorkspaceTopBar';
 import { HomeView } from './views/HomeView';
@@ -24,12 +24,26 @@ import { CalendarView } from './views/CalendarView';
 import { AnalyticsView } from './views/AnalyticsView';
 import { TaskDetailModal } from './TaskDetailModal';
 import { TaskCreateModal } from './TaskCreateModal';
+import { useAuth } from '../auth';
+import { TeamSpaceView } from '../teams/TeamSpaceView';
+import { CreateTeamModal } from '../teams/CreateTeamModal';
+import { getTeamRepository } from '../teams/teamRepository';
+import { Team } from '../teams/types';
 import { useCalendar } from './useCalendar';
 import { usePlanningTargets } from './usePlanningTargets';
 
 export interface WorkspaceLayoutProps {
   isPreview?: boolean;
 }
+
+const TeamSpaceRouteWrapper: React.FC<{
+  currentUser: { id: string; name: string; email: string };
+  basePath: string;
+}> = ({ currentUser, basePath }) => {
+  const { teamId } = useParams<{ teamId: string }>();
+  if (!teamId) return null;
+  return <TeamSpaceView teamId={teamId} currentUser={currentUser} basePath={basePath} />;
+};
 
 export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   isPreview: explicitIsPreview,
@@ -44,29 +58,49 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
       : location.pathname.startsWith('/preview');
   const isLive = !isPreview;
   const basePath = isPreview ? '/preview' : '/workspace';
+  const referenceDate = isPreview ? BENCHMARK_DATE_STR : todayISO();
 
   const user = isPreview
-    ? { name: 'Demo User', email: 'demo@vido.app' }
+    ? { id: 'demo-user-uid', name: 'Demo User', email: 'demo@vido.app' }
     : {
+        id: authUser?.uid || 'user-1',
         name: authUser?.displayName || 'Authenticated User',
         email: authUser?.email || 'user@vido.app',
       };
 
-  const userStorageKey = authUser
-    ? `vido_tasks_${authUser.uid}`
-    : 'vido_live_workspace_tasks';
+  // Team workspace state
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [isCreateTeamOpen, setIsCreateTeamOpen] = useState(false);
+
+  const loadTeams = async () => {
+    try {
+      const repo = getTeamRepository();
+      const userTeams = await repo.getTeams(user.id);
+      setTeams(userTeams);
+    } catch {
+      // Ignore
+    }
+  };
+
+  useEffect(() => {
+    if (!isPreview && loading) return;
+    void loadTeams();
+    const handleFocus = () => {
+      void loadTeams();
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [user.id, user.email, isPreview, loading]);
 
   // Calendar events and planning targets live in Firestore for signed-in
   // users and in localStorage for the shareable preview.
-  const calendar = useCalendar(
-    authUser?.uid ?? undefined,
-    isLive ? 'live' : 'demo'
-  );
-  const planningTargets = usePlanningTargets(
-    authUser?.uid ?? undefined,
-    isLive ? 'live' : 'demo'
-  );
-  const referenceDate = isPreview ? BENCHMARK_DATE_STR : todayISO();
+  const calendar = useCalendar(authUser?.uid, isLive ? 'live' : 'demo');
+  const planningTargets = usePlanningTargets(authUser?.uid, isLive ? 'live' : 'demo');
+
+  // Task state: for preview, use SAMPLE_TASKS. For authenticated users, scope to user ID.
+  const userStorageKey = authUser
+    ? `vido_tasks_${authUser.uid}`
+    : 'vido_live_workspace_tasks';
 
   const [tasks, setTasks] = useState<SampleTask[]>(() => {
     if (isPreview) {
@@ -79,11 +113,13 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         if (Array.isArray(parsed)) return parsed;
       }
     } catch {
-      // Fall back to a clean workspace.
+      // Fallback
     }
+    // New users start with a clean, empty personal workspace
     return [];
   });
 
+  // Re-sync tasks if active user changes
   useEffect(() => {
     if (!isPreview && authUser) {
       try {
@@ -96,7 +132,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
           }
         }
       } catch {
-        // Ignore malformed saved data.
+        // Ignore
       }
       setTasks([]);
     }
@@ -107,7 +143,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
       try {
         localStorage.setItem(`vido_tasks_${authUser.uid}`, JSON.stringify(tasks));
       } catch {
-        // Ignore quota errors.
+        // Ignore quota errors
       }
     }
   }, [tasks, isPreview, authUser?.uid]);
@@ -121,6 +157,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   const dashboard = getHomeDashboardTasks(tasks);
   const syncError = calendar.error ?? planningTargets.error;
 
+  // Authentication guards: evaluated AFTER all hooks have executed unconditionally
   if (!isPreview && loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--canvas)] text-[var(--muted)] text-sm">
@@ -231,6 +268,15 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         subtitle: 'Weekly completion, targets, and monthly goal progress',
       };
     }
+    if (path.includes('/team/')) {
+      const activeTeamId = path.split('/team/')[1]?.split('/')[0];
+      const currentTeam = teams.find((t) => t.id === activeTeamId);
+      return {
+        title: currentTeam?.name || 'Team Workspace',
+        subtitle:
+          currentTeam?.description || 'Collaborative team deliverables and phased milestones',
+      };
+    }
     return {
       title: 'Dashboard',
       subtitle: isPreview
@@ -243,6 +289,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
 
   return (
     <div className="flex flex-col min-h-screen bg-[var(--canvas)] text-[var(--ink)] antialiased">
+      {/* 1. Global Persistent Demo Preview Notice Bar - ONLY in Preview mode */}
       {isPreview && (
         <aside
           aria-label="Demo environment announcement"
@@ -265,7 +312,8 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                 DEMO PREVIEW
               </span>
               <p className="text-xs text-gray-200 truncate hidden md:block">
-                <span className="font-semibold text-white">Interactive Demo:</span> You are exploring ViDo with mock data. Real account sync is disabled.
+                <span className="font-semibold text-white">Interactive Demo:</span> You are exploring
+                ViDo with mock data. Real account sync is disabled.
               </p>
             </div>
           </div>
@@ -286,7 +334,9 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         </div>
       )}
 
+      {/* Main Workspace Body */}
       <div className="flex flex-1 min-h-0">
+        {/* Persistent Left Desktop Sidebar */}
         <WorkspaceSidebar
           isPreview={isPreview}
           basePath={basePath}
@@ -299,10 +349,13 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
             completed: views.completed.length,
             archived: views.archived.length,
           }}
+          teams={teams}
           onNewTaskClick={() => setIsCreateOpen(true)}
+          onCreateTeamClick={() => setIsCreateTeamOpen(true)}
           onSignOut={handleSignOut}
         />
 
+        {/* Main Content Area */}
         <div className="flex-1 flex flex-col min-w-0">
           <WorkspaceTopBar
             title={headerInfo.title}
@@ -311,6 +364,13 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
             user={user}
             authMode={authMode}
             onSignOut={handleSignOut}
+            onRespondInvitation={async (invitationId, accept) => {
+              const repo = getTeamRepository();
+              await repo.respondToInvitation(invitationId, accept, user);
+              if (accept) {
+                await loadTeams();
+              }
+            }}
           />
 
           <main className="flex-1 overflow-y-auto">
@@ -346,6 +406,14 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                     onNewTaskClick={() => setIsCreateOpen(true)}
                   />
                 }
+              />
+              <Route
+                path="team/:teamId/*"
+                element={<TeamSpaceRouteWrapper currentUser={user} basePath={basePath} />}
+              />
+              <Route
+                path="team/:teamId"
+                element={<TeamSpaceRouteWrapper currentUser={user} basePath={basePath} />}
               />
               <Route
                 path="today"
@@ -443,6 +511,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         </div>
       </div>
 
+      {/* Modals */}
       <TaskDetailModal
         task={selectedTask}
         isOpen={isDetailOpen}
@@ -459,6 +528,17 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         onCreateTask={handleCreateTask}
       />
 
+      <CreateTeamModal
+        isOpen={isCreateTeamOpen}
+        onClose={() => setIsCreateTeamOpen(false)}
+        currentUser={user}
+        onTeamCreated={(newTeam) => {
+          setTeams((prev) => [...prev, newTeam]);
+          navigate(`${basePath}/team/${newTeam.id}`);
+        }}
+      />
+
+      {/* Floating Confirmation Toast */}
       {toastMessage && (
         <div
           role="status"
