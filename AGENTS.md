@@ -38,8 +38,9 @@ You must strictly maintain the directory structure documented in `FOLDER_STRUCTU
 ## 3. Product Presentation Rules
 
 - **Product, Not a School Project**: ViDo is presented as a high-end, distraction-free SaaS product. **Never** include references to "Milestone 1", "Milestone 2", "Student Project", "Homework", or "Review Gates" in any user-facing UI text.
-- **Preview Route**: The dashboard demo is hosted at `/preview/*` with subroutes (`/preview/today`, `/preview/upcoming`, `/preview/needs-attention`, `/preview/completed`, `/preview/archived`).
+- **Preview Route**: The dashboard demo is hosted at `/preview/*` with subroutes (`/preview/today`, `/preview/upcoming`, `/preview/needs-attention`, `/preview/completed`, `/preview/archived`, `/preview/calendar`, `/preview/analytics`).
 - **Live Route**: `/workspace/*` mirrors those subroutes but requires sign-in and reads/writes Firestore through the local emulator. Demo components must accept `mode`/`basePath` so links never leak between the two shells.
+- **Planning Persistence**: Calendar events live at `users/{uid}/calendarEvents`, while connection state and weekly/monthly targets live on `users/{uid}`. Preview equivalents are stored in `localStorage`; no real Google account or credentials are used.
 - **Demo Banner & Exit Button**: The preview shell **must always** retain the persistent top demo preview banner with the **left-aligned** `Back to Landing Page` button.
 - **User Identity**: The default preview user profile is `"Demo User"`.
 - **Deterministic Fixtures**: All sample dates and timelines are anchored around **Tuesday, 17 November 2026**.

@@ -1,6 +1,14 @@
 import React from 'react';
 import { NavLink, Link } from 'react-router-dom';
-import { LayoutDashboard, CheckSquare, Palette, Plus, LogOut } from 'lucide-react';
+import {
+  LayoutDashboard,
+  CheckSquare,
+  CalendarDays,
+  BarChart3,
+  Palette,
+  Plus,
+  LogOut,
+} from 'lucide-react';
 import { Button } from '../../components/ui';
 
 export interface WorkspaceSidebarProps {
@@ -35,6 +43,15 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
 
   const dashboardPath = basePath;
   const tasksPath = `${basePath}/tasks`;
+  const calendarPath = `${basePath}/calendar`;
+  const analyticsPath = `${basePath}/analytics`;
+
+  const linkClass = ({ isActive }: { isActive: boolean }) =>
+    `flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+      isActive
+        ? 'bg-white/15 text-white shadow-xs'
+        : 'text-gray-300 hover:bg-white/8 hover:text-white'
+    }`;
 
   return (
     <aside
@@ -82,38 +99,18 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
           </div>
         )}
 
-        {/* Navigation Section: Two Tabs (Dashboard & Tasks) */}
         <div className="text-[10px] uppercase font-bold tracking-wider text-gray-400 mb-2 px-2.5">
           Workspace
         </div>
         <nav className="space-y-1">
-          <NavLink
-            to={dashboardPath}
-            end
-            className={({ isActive }) =>
-              `flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                isActive
-                  ? 'bg-white/15 text-white shadow-xs'
-                  : 'text-gray-300 hover:bg-white/8 hover:text-white'
-              }`
-            }
-          >
+          <NavLink to={dashboardPath} end className={linkClass}>
             <div className="flex items-center gap-2.5">
               <LayoutDashboard className="w-4 h-4 text-[var(--accent)]" />
               <span>Dashboard</span>
             </div>
           </NavLink>
 
-          <NavLink
-            to={tasksPath}
-            className={({ isActive }) =>
-              `flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                isActive
-                  ? 'bg-white/15 text-white shadow-xs'
-                  : 'text-gray-300 hover:bg-white/8 hover:text-white'
-              }`
-            }
-          >
+          <NavLink to={tasksPath} className={linkClass}>
             <div className="flex items-center gap-2.5">
               <CheckSquare className="w-4 h-4 text-emerald-400" />
               <span>Tasks</span>
@@ -121,6 +118,25 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-gray-200 font-bold">
               {totalTasks}
             </span>
+          </NavLink>
+        </nav>
+
+        <div className="text-[10px] uppercase font-bold tracking-wider text-gray-400 mb-2 mt-6 px-2.5">
+          Planning
+        </div>
+        <nav className="space-y-1">
+          <NavLink to={calendarPath} className={linkClass}>
+            <div className="flex items-center gap-2.5">
+              <CalendarDays className="w-4 h-4 text-indigo-400" />
+              <span>Calendar</span>
+            </div>
+          </NavLink>
+
+          <NavLink to={analyticsPath} className={linkClass}>
+            <div className="flex items-center gap-2.5">
+              <BarChart3 className="w-4 h-4 text-emerald-400" />
+              <span>Analytics</span>
+            </div>
           </NavLink>
         </nav>
       </div>

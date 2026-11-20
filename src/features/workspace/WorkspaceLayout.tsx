@@ -1,15 +1,31 @@
-import React, { useState, useEffect } from 'react';
-import { Routes, Route, useLocation, useNavigate, Link, Navigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import { SAMPLE_TASKS, SampleTask } from '../../data/sampleTasks';
+import React, { useEffect, useState } from 'react';
+import {
+  Routes,
+  Route,
+  useLocation,
+  useNavigate,
+  Link,
+  Navigate,
+} from 'react-router-dom';
+import { AlertCircle, ArrowLeft } from 'lucide-react';
+import {
+  BENCHMARK_DATE_STR,
+  SAMPLE_TASKS,
+  type SampleTask,
+} from '../../data/sampleTasks';
 import { getFilteredTasks, getHomeDashboardTasks } from '../../data/taskFilters';
+import { todayISO } from '../../data/calendar';
+import { useAuth } from '../auth';
 import { WorkspaceSidebar } from './WorkspaceSidebar';
 import { WorkspaceTopBar } from './WorkspaceTopBar';
 import { HomeView } from './views/HomeView';
 import { ListView } from './views/ListView';
+import { CalendarView } from './views/CalendarView';
+import { AnalyticsView } from './views/AnalyticsView';
 import { TaskDetailModal } from './TaskDetailModal';
 import { TaskCreateModal } from './TaskCreateModal';
-import { useAuth } from '../auth';
+import { useCalendar } from './useCalendar';
+import { usePlanningTargets } from './usePlanningTargets';
 
 export interface WorkspaceLayoutProps {
   isPreview?: boolean;
@@ -26,6 +42,84 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
     explicitIsPreview !== undefined
       ? explicitIsPreview
       : location.pathname.startsWith('/preview');
+  const isLive = !isPreview;
+  const basePath = isPreview ? '/preview' : '/workspace';
+
+  const user = isPreview
+    ? { name: 'Demo User', email: 'demo@vido.app' }
+    : {
+        name: authUser?.displayName || 'Authenticated User',
+        email: authUser?.email || 'user@vido.app',
+      };
+
+  const userStorageKey = authUser
+    ? `vido_tasks_${authUser.uid}`
+    : 'vido_live_workspace_tasks';
+
+  // Calendar events and planning targets live in Firestore for signed-in
+  // users and in localStorage for the shareable preview.
+  const calendar = useCalendar(
+    authUser?.uid ?? undefined,
+    isLive ? 'live' : 'demo'
+  );
+  const planningTargets = usePlanningTargets(
+    authUser?.uid ?? undefined,
+    isLive ? 'live' : 'demo'
+  );
+  const referenceDate = isPreview ? BENCHMARK_DATE_STR : todayISO();
+
+  const [tasks, setTasks] = useState<SampleTask[]>(() => {
+    if (isPreview) {
+      return SAMPLE_TASKS;
+    }
+    try {
+      const saved = localStorage.getItem(userStorageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch {
+      // Fall back to a clean workspace.
+    }
+    return [];
+  });
+
+  useEffect(() => {
+    if (!isPreview && authUser) {
+      try {
+        const saved = localStorage.getItem(`vido_tasks_${authUser.uid}`);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            setTasks(parsed);
+            return;
+          }
+        }
+      } catch {
+        // Ignore malformed saved data.
+      }
+      setTasks([]);
+    }
+  }, [authUser?.uid, isPreview]);
+
+  useEffect(() => {
+    if (!isPreview && authUser) {
+      try {
+        localStorage.setItem(`vido_tasks_${authUser.uid}`, JSON.stringify(tasks));
+      } catch {
+        // Ignore quota errors.
+      }
+    }
+  }, [tasks, isPreview, authUser?.uid]);
+
+  const [selectedTask, setSelectedTask] = useState<SampleTask | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const views = getFilteredTasks(tasks);
+  const dashboard = getHomeDashboardTasks(tasks);
+  const syncError = calendar.error ?? planningTargets.error;
 
   if (!isPreview && loading) {
     return (
@@ -41,72 +135,6 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   if (!isPreview && !authUser) {
     return <Navigate to="/" replace />;
   }
-
-  const basePath = isPreview ? '/preview' : '/workspace';
-
-  const user = isPreview
-    ? { name: 'Demo User', email: 'demo@vido.app' }
-    : {
-        name: authUser?.displayName || 'Authenticated User',
-        email: authUser?.email || 'user@vido.app',
-      };
-
-  // Task state: for preview, use SAMPLE_TASKS. For authenticated users, scope to user ID.
-  const userStorageKey = authUser ? `vido_tasks_${authUser.uid}` : 'vido_live_workspace_tasks';
-
-  const [tasks, setTasks] = useState<SampleTask[]>(() => {
-    if (isPreview) {
-      return SAMPLE_TASKS;
-    }
-    try {
-      const saved = localStorage.getItem(userStorageKey);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
-      }
-    } catch (e) {
-      // Fallback
-    }
-    // New users start with a clean, empty personal workspace
-    return [];
-  });
-
-  // Re-sync tasks if active user changes
-  useEffect(() => {
-    if (!isPreview && authUser) {
-      try {
-        const saved = localStorage.getItem(`vido_tasks_${authUser.uid}`);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) {
-            setTasks(parsed);
-            return;
-          }
-        }
-      } catch (e) {
-        // Ignore
-      }
-      setTasks([]);
-    }
-  }, [authUser?.uid, isPreview]);
-
-  useEffect(() => {
-    if (!isPreview && authUser) {
-      try {
-        localStorage.setItem(`vido_tasks_${authUser.uid}`, JSON.stringify(tasks));
-      } catch (e) {
-        // Ignore quota errors
-      }
-    }
-  }, [tasks, isPreview, authUser?.uid]);
-
-  const [selectedTask, setSelectedTask] = useState<SampleTask | null>(null);
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-
-  const views = getFilteredTasks(tasks);
-  const dashboard = getHomeDashboardTasks(tasks);
 
   const handleTaskClick = (task: SampleTask) => {
     setSelectedTask(task);
@@ -171,7 +199,10 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   const getHeaderInfo = () => {
     const path = location.pathname;
     if (path.endsWith('/tasks')) {
-      return { title: 'Tasks', subtitle: 'Manage, filter, and track all your active responsibilities' };
+      return {
+        title: 'Tasks',
+        subtitle: 'Manage, filter, and track all your active responsibilities',
+      };
     }
     if (path.endsWith('/today')) {
       return { title: 'Today', subtitle: 'Responsibilities due on 17 November 2026' };
@@ -188,6 +219,18 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
     if (path.endsWith('/archived')) {
       return { title: 'Archived', subtitle: 'Shelved and preserved task history' };
     }
+    if (path.endsWith('/calendar')) {
+      return {
+        title: 'Planning Calendar',
+        subtitle: 'Weekly and monthly view of tasks and calendar commitments',
+      };
+    }
+    if (path.endsWith('/analytics')) {
+      return {
+        title: 'Completion Analytics',
+        subtitle: 'Weekly completion, targets, and monthly goal progress',
+      };
+    }
     return {
       title: 'Dashboard',
       subtitle: isPreview
@@ -200,7 +243,6 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
 
   return (
     <div className="flex flex-col min-h-screen bg-[var(--canvas)] text-[var(--ink)] antialiased">
-      {/* 1. Global Persistent Demo Preview Notice Bar - ONLY in Preview mode */}
       {isPreview && (
         <aside
           aria-label="Demo environment announcement"
@@ -234,9 +276,17 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         </aside>
       )}
 
-      {/* Main Workspace Body */}
+      {syncError && (
+        <div
+          role="alert"
+          className="bg-red-50 border-b border-red-200 text-red-700 px-6 py-2.5 text-xs flex items-center gap-2"
+        >
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span className="truncate">{syncError}</span>
+        </div>
+      )}
+
       <div className="flex flex-1 min-h-0">
-        {/* Persistent Left Desktop Sidebar */}
         <WorkspaceSidebar
           isPreview={isPreview}
           basePath={basePath}
@@ -253,7 +303,6 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
           onSignOut={handleSignOut}
         />
 
-        {/* Main Content Area */}
         <div className="flex-1 flex flex-col min-w-0">
           <WorkspaceTopBar
             title={headerInfo.title}
@@ -356,12 +405,51 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                   />
                 }
               />
+              <Route
+                path="calendar"
+                element={
+                  <CalendarView
+                    tasks={tasks}
+                    events={calendar.events}
+                    connected={calendar.connected}
+                    onConnect={() => {
+                      void calendar.connect().catch(() => undefined);
+                    }}
+                    onDisconnect={() => {
+                      void calendar.disconnect().catch(() => undefined);
+                    }}
+                    onCreateEvent={(event) => {
+                      void calendar.addEvent(event).catch(() => undefined);
+                    }}
+                    onDeleteEvent={(eventId) => {
+                      void calendar.deleteEvent(eventId).catch(() => undefined);
+                    }}
+                    onCreateTask={handleCreateTask}
+                    onTaskClick={handleTaskClick}
+                    referenceDate={referenceDate}
+                    mode={isLive ? 'live' : 'demo'}
+                  />
+                }
+              />
+              <Route
+                path="analytics"
+                element={
+                  <AnalyticsView
+                    tasks={tasks}
+                    targets={planningTargets.targets}
+                    onTargetsChange={(next) => {
+                      void planningTargets.setTargets(next).catch(() => undefined);
+                    }}
+                    referenceDate={referenceDate}
+                    mode={isLive ? 'live' : 'demo'}
+                  />
+                }
+              />
             </Routes>
           </main>
         </div>
       </div>
 
-      {/* Modals */}
       <TaskDetailModal
         task={selectedTask}
         isOpen={isDetailOpen}
@@ -378,7 +466,6 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         onCreateTask={handleCreateTask}
       />
 
-      {/* Floating Confirmation Toast */}
       {toastMessage && (
         <div
           role="status"

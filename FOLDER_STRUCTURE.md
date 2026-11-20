@@ -23,7 +23,7 @@ ViDo/
 │   │   ├── style-lab/       # Theme, accent palette, and visual lab (/style-lab route)
 │   │   └── workspace/       # Dashboard shell for the live app (/workspace) and demo (/preview)
 │   │       └── views/       # Subroute view components (Home, Today, Upcoming, etc.)
-│   ├── lib/                 # Firebase init, auth helpers, Firestore task store
+│   ├── lib/                 # Firebase init, auth helpers, task/calendar/settings stores
 │   ├── test/                # Global test setup and environment configuration
 │   ├── App.tsx              # Central client-side routing
 │   ├── index.css            # Global CSS variables, theme variables, and Tailwind v4 setup
@@ -64,7 +64,9 @@ ViDo/
 - **Current Contents**:
   - `sampleTasks.ts`: Deterministic task dataset, priorities, tags, categories, and checkpoints.
   - `taskFilters.ts`: Pure functions for filtering tasks into *Today*, *Upcoming*, *Needs Attention*, *Completed*, and *Archived*.
-  - `taskFilters.test.ts`: Exhaustive unit tests for date filtering, overdue detection, and category grouping.
+  - `calendar.ts`: ISO date helpers, week/month grids, sample emulator calendar events, and event sorting.
+  - `analytics.ts`: Weekly/monthly completion stats, target progress, and cumulative monthly roll-ups.
+  - `taskFilters.test.ts`, `calendar.test.ts`, `analytics.test.ts`: Colocated pure-logic tests.
 - **Rules**:
   - Keep functions pure and side-effect free.
   - The deterministic base date for preview fixtures is **Tuesday, 17 November 2026**.
@@ -78,18 +80,24 @@ Each subfolder under `src/features/` encapsulates a complete user-facing product
 - **Purpose**: The public marketing face of ViDo explaining the value proposition to personal, household, and work users.
 
 #### 2. `src/features/workspace/`
-- **Route**: `/preview/*`
+- **Routes**: `/preview/*` and `/workspace/*`
 - **Components**:
-  - `WorkspaceLayout.tsx`: Shell layout with persistent top demo banner, sidebar, and subroute rendering.
+  - `WorkspaceLayout.tsx`: Shared shell layout with persistent banner, sidebar, topbar, and subroutes.
   - `WorkspaceTopBar.tsx`: Sticky top navigation bar with title, search, filter, and user profile.
   - `WorkspaceSidebar.tsx`: Left navigation sidebar with view links, badges, and theme link.
+  - `LiveWorkspace.tsx`: Authenticated live shell wired to Firestore task, calendar, and target hooks.
+  - `useUserTasks.ts`: Live task subscription and write helpers.
+  - `useCalendar.ts` / `usePlanningTargets.ts`: Mode-aware hooks selecting Firestore or preview `localStorage`.
   - `TaskRow.tsx`: Horizontal, scannable task row with priority badge, progress bar, and checkpoint counts.
   - `TaskCard.tsx`: Detailed card representation of a task.
   - `TaskDetailModal.tsx` & `TaskCreateModal.tsx`: Interactive modals for inspecting and creating tasks.
   - `views/HomeView.tsx`: Dashboard command center with 4 interactive summary tiles and task feed.
   - `views/ListView.tsx`: Category-filterable list view for specific subroutes.
+  - `views/CalendarView.tsx`: Weekly/monthly unified tasks-and-events calendar with two-way actions.
+  - `views/AnalyticsView.tsx`: Completion percentages, target progress, and monthly roll-up charts.
 - **Rules**:
-  - Must remain clearly designated as an **interactive preview** with sample data.
+  - Preview mode must remain clearly designated as an **interactive preview** with sample data.
+  - Live mode requires Firebase emulator sign-in and stores data under `users/{uid}`.
   - Must provide the left-aligned **Back to Landing Page** navigation on the persistent top banner.
 
 #### 3. `src/features/style-lab/`
