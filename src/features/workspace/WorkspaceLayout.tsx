@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, useLocation, useNavigate, Link, Navigate } from 'react-router-dom';
+import { Routes, Route, useLocation, useNavigate, Link, Navigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { SAMPLE_TASKS, SampleTask } from '../../data/sampleTasks';
 import { getFilteredTasks, getHomeDashboardTasks } from '../../data/taskFilters';
@@ -10,10 +10,23 @@ import { ListView } from './views/ListView';
 import { TaskDetailModal } from './TaskDetailModal';
 import { TaskCreateModal } from './TaskCreateModal';
 import { useAuth } from '../auth';
+import { TeamSpaceView } from '../teams/TeamSpaceView';
+import { CreateTeamModal } from '../teams/CreateTeamModal';
+import { getTeamRepository } from '../teams/teamRepository';
+import { Team } from '../teams/types';
 
 export interface WorkspaceLayoutProps {
   isPreview?: boolean;
 }
+
+const TeamSpaceRouteWrapper: React.FC<{
+  currentUser: { id: string; name: string; email: string };
+  basePath: string;
+}> = ({ currentUser, basePath }) => {
+  const { teamId } = useParams<{ teamId: string }>();
+  if (!teamId) return null;
+  return <TeamSpaceView teamId={teamId} currentUser={currentUser} basePath={basePath} />;
+};
 
 export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   isPreview: explicitIsPreview,
@@ -45,11 +58,35 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   const basePath = isPreview ? '/preview' : '/workspace';
 
   const user = isPreview
-    ? { name: 'Demo User', email: 'demo@vido.app' }
+    ? { id: 'demo-user-uid', name: 'Demo User', email: 'demo@vido.app' }
     : {
+        id: authUser?.uid || 'user-1',
         name: authUser?.displayName || 'Authenticated User',
         email: authUser?.email || 'user@vido.app',
       };
+
+  // Team workspace state
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [isCreateTeamOpen, setIsCreateTeamOpen] = useState(false);
+
+  const loadTeams = async () => {
+    try {
+      const repo = getTeamRepository();
+      const userTeams = await repo.getTeams(user.id);
+      setTeams(userTeams);
+    } catch (e) {
+      // Ignore
+    }
+  };
+
+  useEffect(() => {
+    void loadTeams();
+    const handleFocus = () => {
+      void loadTeams();
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [user.id, user.email]);
 
   // Task state: for preview, use SAMPLE_TASKS. For authenticated users, scope to user ID.
   const userStorageKey = authUser ? `vido_tasks_${authUser.uid}` : 'vido_live_workspace_tasks';
@@ -188,6 +225,14 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
     if (path.endsWith('/archived')) {
       return { title: 'Archived', subtitle: 'Shelved and preserved task history' };
     }
+    if (path.includes('/team/')) {
+      const activeTeamId = path.split('/team/')[1]?.split('/')[0];
+      const currentTeam = teams.find((t) => t.id === activeTeamId);
+      return {
+        title: currentTeam?.name || 'Team Workspace',
+        subtitle: currentTeam?.description || 'Collaborative team deliverables and phased milestones',
+      };
+    }
     return {
       title: 'Dashboard',
       subtitle: isPreview
@@ -249,7 +294,9 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
             completed: views.completed.length,
             archived: views.archived.length,
           }}
+          teams={teams}
           onNewTaskClick={() => setIsCreateOpen(true)}
+          onCreateTeamClick={() => setIsCreateTeamOpen(true)}
           onSignOut={handleSignOut}
         />
 
@@ -262,6 +309,13 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
             user={user}
             authMode={authMode}
             onSignOut={handleSignOut}
+            onRespondInvitation={async (invitationId, accept) => {
+              const repo = getTeamRepository();
+              await repo.respondToInvitation(invitationId, accept, user);
+              if (accept) {
+                await loadTeams();
+              }
+            }}
           />
 
           <main className="flex-1 overflow-y-auto">
@@ -297,6 +351,14 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                     onNewTaskClick={() => setIsCreateOpen(true)}
                   />
                 }
+              />
+              <Route
+                path="team/:teamId/*"
+                element={<TeamSpaceRouteWrapper currentUser={user} basePath={basePath} />}
+              />
+              <Route
+                path="team/:teamId"
+                element={<TeamSpaceRouteWrapper currentUser={user} basePath={basePath} />}
               />
               <Route
                 path="today"
@@ -376,6 +438,16 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
         onCreateTask={handleCreateTask}
+      />
+
+      <CreateTeamModal
+        isOpen={isCreateTeamOpen}
+        onClose={() => setIsCreateTeamOpen(false)}
+        currentUser={user}
+        onTeamCreated={(newTeam) => {
+          setTeams((prev) => [...prev, newTeam]);
+          navigate(`${basePath}/team/${newTeam.id}`);
+        }}
       />
 
       {/* Floating Confirmation Toast */}
