@@ -96,7 +96,7 @@ A transparent space for collaborative execution.
 | `/preview/*` | Full guest demo with deterministic sample data and browser-local planning state. |
 | `/preview\|workspace/tasks` | Filterable task management view for active responsibilities. |
 | `/preview\|workspace/today`, `/upcoming`, `/needs-attention`, `/completed`, `/archived` | Section-specific task lists derived from shared filters. |
-| `/preview\|workspace/calendar` | Weekly/monthly planning calendar combining ViDo tasks and emulator-backed calendar events. |
+| `/preview\|workspace/calendar` | Weekly/monthly planning calendar combining ViDo tasks and calendar events. |
 | `/preview\|workspace/analytics` | Completion analytics with editable weekly/monthly targets and cumulative progress. |
 | `/style-lab` | Interactive sandbox for `Cobalt Blue`, `Deep Indigo`, and `Forest Green` accent palettes. |
 
@@ -107,7 +107,7 @@ A transparent space for collaborative execution.
 ### 🔐 Authentication & Session Management
 - **Google sign-in (emulator)**: Popup-based sign-in powered by Firebase Authentication against the local Auth emulator.
 - **No real credentials required**: The default `demo-vido` project and emulator suite run entirely on your machine.
-- **Per-user planning data**: Calendar connection, calendar events, and weekly/monthly targets are stored in Firestore under `users/{uid}` for signed-in users.
+- **Per-user planning data**: Calendar events and weekly/monthly targets are stored in Firestore under `users/{uid}` for signed-in users.
 - **Zero-barrier demo**: `/preview/*` is fully interactive without an account.
 
 ### ✅ Task Lifecycle & Checkpoints
@@ -117,7 +117,7 @@ A transparent space for collaborative execution.
 
 ### 🗓️ Planning Calendar
 - Unified **weekly** and **monthly** layouts showing ViDo tasks and calendar commitments together.
-- **Connect Google Calendar (emulator)** seeds sample events locally; no external Google APIs are contacted.
+- Create and manage planning calendar events alongside tasks in weekly and monthly views.
 - **Task ↔ event flows**: add a task to the calendar as a linked event, import an event as a task, or create/remove manual events.
 - Live events are stored at `users/{uid}/calendarEvents`; preview events are stored in `localStorage`.
 
@@ -187,7 +187,7 @@ Configuration lives in [`.env.example`](./.env.example), [`firebase.json`](./fir
 2. Click **Continue with Google** / **Sign In to Dashboard**.
 3. Choose any mock account in the Firebase Auth emulator popup.
 4. You are taken to `/workspace` with a per-user workspace.
-5. Use **Calendar** to connect the emulator calendar, add/import events, and manage planning items; use **Analytics** to adjust weekly/monthly targets.
+5. Use **Calendar** to add/import events and manage planning items; use **Analytics** to adjust weekly/monthly targets.
 6. Click **Sign Out** to return to the landing page.
 
 ---

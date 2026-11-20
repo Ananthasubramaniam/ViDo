@@ -64,7 +64,7 @@ ViDo/
 - **Current Contents**:
   - `sampleTasks.ts`: Deterministic task dataset, priorities, tags, categories, and checkpoints.
   - `taskFilters.ts`: Pure functions for filtering tasks into *Today*, *Upcoming*, *Needs Attention*, *Completed*, and *Archived*.
-  - `calendar.ts`: ISO date helpers, week/month grids, sample emulator calendar events, and event sorting.
+  - `calendar.ts`: ISO date helpers, week/month grids, sample calendar events, and event sorting.
   - `analytics.ts`: Weekly/monthly completion stats, target progress, and cumulative monthly roll-ups.
   - `taskFilters.test.ts`, `calendar.test.ts`, `analytics.test.ts`: Colocated pure-logic tests.
 - **Rules**:

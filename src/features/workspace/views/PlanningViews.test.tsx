@@ -1,4 +1,4 @@
-import type { ComponentProps } from 'react';
+﻿import type { ComponentProps } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import type { SampleTask } from '../../../data/sampleTasks';
@@ -26,12 +26,10 @@ const event: CalendarEvent = {
   time: '10:00',
   endTime: '10:30',
   description: 'Review the plan with the team.',
-  source: 'google-emulator',
+  source: 'calendar',
 };
 
 function renderCalendar(overrides: Partial<ComponentProps<typeof CalendarView>> = {}) {
-  const onConnect = vi.fn();
-  const onDisconnect = vi.fn();
   const onCreateEvent = vi.fn();
   const onDeleteEvent = vi.fn();
   const onCreateTask = vi.fn();
@@ -41,9 +39,6 @@ function renderCalendar(overrides: Partial<ComponentProps<typeof CalendarView>> 
     <CalendarView
       tasks={[task]}
       events={[event]}
-      connected
-      onConnect={onConnect}
-      onDisconnect={onDisconnect}
       onCreateEvent={onCreateEvent}
       onDeleteEvent={onDeleteEvent}
       onCreateTask={onCreateTask}
@@ -55,8 +50,6 @@ function renderCalendar(overrides: Partial<ComponentProps<typeof CalendarView>> 
   );
 
   return {
-    onConnect,
-    onDisconnect,
     onCreateEvent,
     onDeleteEvent,
     onCreateTask,
@@ -82,7 +75,7 @@ describe('CalendarView', () => {
     expect(screen.getAllByRole('button', { name: /Open week of/ }).length).toBeGreaterThan(0);
   });
 
-  it('adds a ViDo task to the emulator calendar with a task link', () => {
+  it('adds a ViDo task to the planning calendar with a task link', () => {
     const { onCreateEvent } = renderCalendar();
 
     fireEvent.click(
@@ -95,7 +88,7 @@ describe('CalendarView', () => {
         title: 'Unique planning task',
         date: REFERENCE_DATE,
         time: '09:00',
-        source: 'google-emulator',
+        source: 'calendar',
         linkedTaskId: 'task-unique',
       })
     );
@@ -126,7 +119,7 @@ describe('CalendarView', () => {
     expect(onDeleteEvent).toHaveBeenCalledWith('event-unique');
   });
 
-  it('creates a manual calendar event while connected', () => {
+  it('creates a manual calendar event', () => {
     const { onCreateEvent } = renderCalendar();
 
     fireEvent.click(screen.getByRole('button', { name: /Add event/i }));
@@ -139,23 +132,9 @@ describe('CalendarView', () => {
       expect.objectContaining({
         title: 'Manual event',
         date: REFERENCE_DATE,
-        source: 'google-emulator',
+        source: 'calendar',
       })
     );
-  });
-
-  it('asks the user to connect before showing external events', () => {
-    const { onConnect } = renderCalendar({ connected: false });
-
-    expect(
-      screen.getByRole('button', { name: /Connect Google Calendar/i })
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', { name: 'Calendar event: Unique planning sync' })
-    ).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: /Connect Google Calendar/i }));
-    expect(onConnect).toHaveBeenCalledTimes(1);
   });
 });
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   SAMPLE_CALENDAR_EVENTS,
   compareEvents,
@@ -7,204 +7,127 @@ import {
 import {
   createCalendarEvent,
   deleteCalendarEvent,
-  seedCalendarEvents,
-  setCalendarConnection,
-  subscribeCalendarConnection,
   subscribeCalendarEvents,
 } from '../../lib/calendarStore';
 
 const DEMO_STORAGE_KEY = 'vido-demo-calendar-v1';
 
-interface DemoCalendarState {
-  connected: boolean;
-  events: CalendarEvent[];
-}
-
-function loadDemoCalendar(): DemoCalendarState {
+function loadDemoEvents(): CalendarEvent[] {
   if (typeof window === 'undefined') {
-    return { connected: false, events: SAMPLE_CALENDAR_EVENTS };
+    return SAMPLE_CALENDAR_EVENTS;
   }
   try {
     const raw = window.localStorage.getItem(DEMO_STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as Partial<DemoCalendarState>;
-      return {
-        connected: parsed.connected === true,
-        events: Array.isArray(parsed.events)
-          ? parsed.events
-          : SAMPLE_CALENDAR_EVENTS,
-      };
+    if (!raw) return SAMPLE_CALENDAR_EVENTS;
+    const parsed = JSON.parse(raw) as unknown;
+    if (Array.isArray(parsed)) {
+      return parsed as CalendarEvent[];
     }
+    if (
+      parsed &&
+      typeof parsed === 'object' &&
+      Array.isArray((parsed as { events?: unknown }).events)
+    ) {
+      return (parsed as { events: CalendarEvent[] }).events;
+    }
+    return SAMPLE_CALENDAR_EVENTS;
   } catch {
-    // Fall back to a fresh demo calendar.
+    return SAMPLE_CALENDAR_EVENTS;
   }
-  return { connected: false, events: SAMPLE_CALENDAR_EVENTS };
 }
 
-export interface CalendarState {
+function persistDemoEvents(events: CalendarEvent[]) {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(events));
+}
+
+export interface UseCalendarResult {
   events: CalendarEvent[];
-  connected: boolean;
-  ready: boolean;
+  loading: boolean;
   error: string | null;
-  connect: () => Promise<void>;
-  disconnect: () => Promise<void>;
   addEvent: (event: CalendarEvent) => Promise<void>;
   deleteEvent: (eventId: string) => Promise<void>;
 }
 
-/**
- * Local "Google Calendar" integration. In live mode events are per-user
- * Firestore documents; in the demo they are stored in localStorage.
- */
 export function useCalendar(
   uid?: string | null,
   mode: 'demo' | 'live' = 'demo'
-): CalendarState {
-  const [demoState, setDemoState] = useState<DemoCalendarState>(loadDemoCalendar);
-  const [liveEvents, setLiveEvents] = useState<CalendarEvent[]>([]);
-  const [liveConnected, setLiveConnected] = useState(false);
-  const [eventsReady, setEventsReady] = useState(false);
-  const [connectionReady, setConnectionReady] = useState(false);
+): UseCalendarResult {
+  const resolvedUid = uid ?? undefined;
+  const [events, setEvents] = useState<CalendarEvent[]>(() =>
+    mode === 'demo' ? loadDemoEvents() : []
+  );
+  const [loading, setLoading] = useState(mode === 'live');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    window.localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(demoState));
-  }, [demoState]);
+    if (mode !== 'live' || !resolvedUid) {
+      setEvents(mode === 'demo' ? loadDemoEvents() : []);
+      setLoading(false);
+      setError(null);
+      return;
+    }
 
-  useEffect(() => {
-    if (mode !== 'live' || !uid) return;
-
-    let active = true;
-    setEventsReady(false);
-    setConnectionReady(false);
+    setLoading(true);
     setError(null);
 
-    const unsubscribeEvents = subscribeCalendarEvents(
-      uid,
-      (events) => {
-        if (!active) return;
-        setLiveEvents([...events].sort(compareEvents));
-        setEventsReady(true);
+    const unsubscribe = subscribeCalendarEvents(
+      resolvedUid,
+      (nextEvents) => {
+        setEvents(nextEvents);
+        setLoading(false);
       },
-      (eventError) => {
-        if (!active) return;
-        setError(eventError.message);
-        setEventsReady(true);
+      (subscribeError) => {
+        setError(subscribeError.message);
+        setLoading(false);
       }
     );
 
-    const unsubscribeConnection = subscribeCalendarConnection(
-      uid,
-      (connected) => {
-        if (!active) return;
-        setLiveConnected(connected);
-        setConnectionReady(true);
-      },
-      (connectionError) => {
-        if (!active) return;
-        setError(connectionError.message);
-        setConnectionReady(true);
-      }
-    );
-
-    return () => {
-      active = false;
-      unsubscribeEvents();
-      unsubscribeConnection();
-    };
-  }, [mode, uid]);
-
-  const connect = useCallback(async () => {
-    setError(null);
-    if (mode !== 'live' || !uid) {
-      setDemoState((prev) => ({ ...prev, connected: true }));
-      return;
-    }
-    try {
-      await setCalendarConnection(uid, true);
-      await seedCalendarEvents(uid);
-    } catch (connectError) {
-      setError((connectError as Error).message);
-      throw connectError;
-    }
-  }, [mode, uid]);
-
-  const disconnect = useCallback(async () => {
-    setError(null);
-    if (mode !== 'live' || !uid) {
-      setDemoState((prev) => ({ ...prev, connected: false }));
-      return;
-    }
-    try {
-      await setCalendarConnection(uid, false);
-    } catch (disconnectError) {
-      setError((disconnectError as Error).message);
-      throw disconnectError;
-    }
-  }, [mode, uid]);
+    return () => unsubscribe();
+  }, [mode, resolvedUid]);
 
   const addEvent = useCallback(
     async (event: CalendarEvent) => {
-      setError(null);
-      if (mode !== 'live' || !uid) {
-        setDemoState((prev) => ({
-          ...prev,
-          events: [...prev.events, event].sort(compareEvents),
-        }));
+      if (mode === 'demo') {
+        const next = [...events.filter((entry) => entry.id !== event.id), event];
+        persistDemoEvents(next);
+        setEvents(next);
         return;
       }
+      if (!resolvedUid) return;
       try {
-        await createCalendarEvent(uid, event);
-      } catch (writeError) {
-        setError((writeError as Error).message);
-        throw writeError;
+        await createCalendarEvent(resolvedUid, event);
+      } catch (createError) {
+        setError((createError as Error).message);
+        throw createError;
       }
     },
-    [mode, uid]
+    [events, mode, resolvedUid]
   );
 
   const deleteEvent = useCallback(
     async (eventId: string) => {
-      setError(null);
-      if (mode !== 'live' || !uid) {
-        setDemoState((prev) => ({
-          ...prev,
-          events: prev.events.filter((event) => event.id !== eventId),
-        }));
+      if (mode === 'demo') {
+        const next = events.filter((event) => event.id !== eventId);
+        persistDemoEvents(next);
+        setEvents(next);
         return;
       }
+      if (!resolvedUid) return;
       try {
-        await deleteCalendarEvent(uid, eventId);
-      } catch (writeError) {
-        setError((writeError as Error).message);
-        throw writeError;
+        await deleteCalendarEvent(resolvedUid, eventId);
+      } catch (deleteError) {
+        setError((deleteError as Error).message);
+        throw deleteError;
       }
     },
-    [mode, uid]
+    [events, mode, resolvedUid]
   );
 
-  if (mode === 'live') {
-    return {
-      events: liveEvents,
-      connected: liveConnected,
-      ready: eventsReady && connectionReady,
-      error,
-      connect,
-      disconnect,
-      addEvent,
-      deleteEvent,
-    };
-  }
+  const sortedEvents = useMemo(
+    () => [...events].sort(compareEvents),
+    [events]
+  );
 
-  return {
-    events: demoState.events,
-    connected: demoState.connected,
-    ready: true,
-    error,
-    connect,
-    disconnect,
-    addEvent,
-    deleteEvent,
-  };
+  return { events: sortedEvents, loading, error, addEvent, deleteEvent };
 }

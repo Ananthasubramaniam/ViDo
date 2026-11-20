@@ -411,13 +411,6 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                   <CalendarView
                     tasks={tasks}
                     events={calendar.events}
-                    connected={calendar.connected}
-                    onConnect={() => {
-                      void calendar.connect().catch(() => undefined);
-                    }}
-                    onDisconnect={() => {
-                      void calendar.disconnect().catch(() => undefined);
-                    }}
                     onCreateEvent={(event) => {
                       void calendar.addEvent(event).catch(() => undefined);
                     }}

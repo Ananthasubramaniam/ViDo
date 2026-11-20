@@ -7,11 +7,11 @@ export interface CalendarEvent {
   time?: string; // HH:mm
   endTime?: string; // HH:mm
   description?: string;
-  source: 'google-emulator';
+  source: 'calendar';
   linkedTaskId?: string;
 }
 
-/** These stand in for events fetched from a connected Google Calendar. */
+/** Sample calendar events shown in the preview workspace. */
 export const SAMPLE_CALENDAR_EVENTS: CalendarEvent[] = [
   {
     id: 'event-weekly-planning',
@@ -20,7 +20,7 @@ export const SAMPLE_CALENDAR_EVENTS: CalendarEvent[] = [
     time: '09:30',
     endTime: '10:00',
     description: 'Review the week ahead and confirm priorities.',
-    source: 'google-emulator',
+    source: 'calendar',
   },
   {
     id: 'event-design-review',
@@ -29,7 +29,7 @@ export const SAMPLE_CALENDAR_EVENTS: CalendarEvent[] = [
     time: '11:00',
     endTime: '12:00',
     description: 'Walk through the calendar and analytics layouts.',
-    source: 'google-emulator',
+    source: 'calendar',
   },
   {
     id: 'event-dentist',
@@ -37,7 +37,7 @@ export const SAMPLE_CALENDAR_EVENTS: CalendarEvent[] = [
     date: '2026-11-19',
     time: '15:00',
     endTime: '16:00',
-    source: 'google-emulator',
+    source: 'calendar',
   },
   {
     id: 'event-standup',
@@ -46,7 +46,7 @@ export const SAMPLE_CALENDAR_EVENTS: CalendarEvent[] = [
     time: '10:00',
     endTime: '10:15',
     description: 'Daily check-in with the delivery team.',
-    source: 'google-emulator',
+    source: 'calendar',
   },
   {
     id: 'event-roadmap',
@@ -54,7 +54,7 @@ export const SAMPLE_CALENDAR_EVENTS: CalendarEvent[] = [
     date: '2026-11-23',
     time: '14:00',
     endTime: '16:00',
-    source: 'google-emulator',
+    source: 'calendar',
   },
   {
     id: 'event-monthly-review',
@@ -63,7 +63,7 @@ export const SAMPLE_CALENDAR_EVENTS: CalendarEvent[] = [
     time: '09:00',
     endTime: '10:00',
     description: 'Compare weekly progress against the monthly goal.',
-    source: 'google-emulator',
+    source: 'calendar',
   },
   {
     id: 'event-offsite',
@@ -71,7 +71,7 @@ export const SAMPLE_CALENDAR_EVENTS: CalendarEvent[] = [
     date: '2026-12-01',
     time: '13:00',
     endTime: '17:00',
-    source: 'google-emulator',
+    source: 'calendar',
   },
 ];
 

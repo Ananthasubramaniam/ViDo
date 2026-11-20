@@ -85,21 +85,21 @@ describe('calendar date helpers', () => {
         title: 'Late',
         date: '2026-11-17',
         time: '15:00',
-        source: 'google-emulator',
+        source: 'calendar',
       },
       {
         id: 'early',
         title: 'Early',
         date: '2026-11-17',
         time: '09:00',
-        source: 'google-emulator',
+        source: 'calendar',
       },
       {
         id: 'other-day',
         title: 'Other day',
         date: '2026-11-16',
         time: '20:00',
-        source: 'google-emulator',
+        source: 'calendar',
       },
     ];
 

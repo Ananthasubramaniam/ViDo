@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import {
   addDays,
   addMonths,
@@ -16,7 +16,6 @@ import type { SampleTask } from '../../../data/sampleTasks';
 import { Button, Input } from '../../../components/ui';
 import {
   CalendarPlus,
-  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Link2,
@@ -32,9 +31,6 @@ type CalendarItem =
 export interface CalendarViewProps {
   tasks: SampleTask[];
   events: CalendarEvent[];
-  connected: boolean;
-  onConnect: () => void;
-  onDisconnect: () => void;
   onCreateEvent: (event: CalendarEvent) => void;
   onDeleteEvent: (eventId: string) => void;
   onCreateTask: (task: SampleTask) => void;
@@ -71,7 +67,7 @@ const EventDialog: React.FC<{
 
       <div className="flex items-center gap-2 mb-3">
         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-indigo-500/15 text-indigo-700 border border-indigo-500/30">
-          Google Calendar (emulator)
+          Planning calendar
         </span>
         {event.linkedTaskId && (
           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-700 border border-emerald-500/30 flex items-center gap-1">
@@ -83,7 +79,7 @@ const EventDialog: React.FC<{
       <h3 className="text-lg font-bold text-[var(--ink)] pr-6">{event.title}</h3>
       <p className="text-xs text-[var(--muted)] mt-1">
         {formatLongDate(event.date)}
-        {event.time ? ` · ${event.time}${event.endTime ? `–${event.endTime}` : ''}` : ''}
+        {event.time ? ` ┬À ${event.time}${event.endTime ? `ÔÇô${event.endTime}` : ''}` : ''}
       </p>
       {event.description && (
         <p className="text-xs text-[var(--ink)] mt-3 leading-relaxed">{event.description}</p>
@@ -104,9 +100,6 @@ const EventDialog: React.FC<{
 export const CalendarView: React.FC<CalendarViewProps> = ({
   tasks,
   events,
-  connected,
-  onConnect,
-  onDisconnect,
   onCreateEvent,
   onDeleteEvent,
   onCreateTask,
@@ -136,8 +129,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   );
 
   const visibleEvents = useMemo(
-    () => (connected ? [...events].sort(compareEvents) : []),
-    [connected, events]
+    () => [...events].sort(compareEvents),
+    [events]
   );
 
   const itemsForDay = (date: string): CalendarItem[] => {
@@ -178,7 +171,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       date: task.dueDate,
       time: task.dueTime,
       description: task.description,
-      source: 'google-emulator',
+      source: 'calendar',
       linkedTaskId: task.id,
     });
   };
@@ -197,7 +190,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         {
           id: `cp-${Date.now()}`,
           timestamp: new Date().toISOString(),
-          note: 'Imported from Google Calendar (emulator).',
+          note: 'Imported from calendar.',
         },
       ],
     });
@@ -213,7 +206,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       date: draft.date || referenceDate,
       time: draft.time || undefined,
       description: draft.description.trim() || undefined,
-      source: 'google-emulator',
+      source: 'calendar',
     });
     setDraft({ title: '', date: draft.date, time: '09:00', description: '' });
     setIsAddOpen(false);
@@ -252,7 +245,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           </span>
           {!compact && (
             <span className="block text-[9px] text-[var(--muted)] mt-0.5">
-              {item.time ?? 'All day'} · {isTask ? 'Task' : 'Calendar'}
+              {item.time ?? 'All day'} ┬À {isTask ? 'Task' : 'Calendar'}
             </span>
           )}
         </button>
@@ -336,60 +329,21 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         </div>
       </div>
 
-      <div
-        className={`flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 ${
-          connected
-            ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-900'
-            : 'bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-900'
-        }`}
-      >
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 bg-[var(--surface)] border-[var(--line)]">
         <div className="flex items-center gap-2 min-w-0">
-          {connected ? (
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-          ) : (
-            <CalendarPlus className="w-4 h-4 text-amber-600 shrink-0" />
-          )}
+          <CalendarPlus className="w-4 h-4 text-[var(--accent)] shrink-0" />
           <div>
-            <p className="text-xs font-semibold text-[var(--ink)]">
-              {connected
-                ? 'Google Calendar connected (emulator)'
-                : 'Google Calendar is not connected'}
-            </p>
+            <p className="text-xs font-semibold text-[var(--ink)]">Planning calendar</p>
             <p className="text-[10px] text-[var(--muted)] mt-0.5">
-              {connected
-                ? mode === 'live'
-                  ? 'Events are saved per user in Firestore. Add tasks to the calendar or import events as tasks.'
-                  : 'Demo events are stored in this browser. Add tasks to the calendar or import events as tasks.'
-                : 'Connect to see meetings alongside tasks. No real Google account is contacted in this local setup.'}
+              {mode === 'live'
+                ? 'Events are saved per user in Firestore. Add tasks to the calendar or import events as tasks.'
+                : 'Demo events are stored in this browser. Add tasks to the calendar or import events as tasks.'}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          {connected && (
-            <button
-              type="button"
-              onClick={onDisconnect}
-              className="px-2.5 py-1.5 rounded-lg border border-[var(--line)] bg-[var(--surface)] text-[10px] font-semibold text-[var(--muted)] hover:text-[var(--ink)] cursor-pointer"
-            >
-              Disconnect
-            </button>
-          )}
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => (connected ? setIsAddOpen(true) : onConnect())}
-          >
-            {connected ? (
-              <>
-                <Plus className="w-3.5 h-3.5 mr-1.5" /> Add event
-              </>
-            ) : (
-              <>
-                <CalendarPlus className="w-3.5 h-3.5 mr-1.5" /> Connect Google Calendar
-              </>
-            )}
-          </Button>
-        </div>
+        <Button variant="primary" size="sm" onClick={() => setIsAddOpen(true)}>
+          <Plus className="w-3.5 h-3.5 mr-1.5" /> Add event
+        </Button>
       </div>
 
       <div className="flex items-center gap-4 text-[10px] text-[var(--muted)]">
@@ -506,7 +460,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             </button>
             <h3 className="text-lg font-bold text-[var(--ink)]">Add calendar event</h3>
             <p className="text-xs text-[var(--muted)] mt-1 mb-4">
-              Saved to the connected emulator calendar.
+              Saved to your planning calendar.
             </p>
             <form onSubmit={submitEvent} className="space-y-3">
               <Input
