@@ -468,6 +468,12 @@ body {
   transform: translateY(-1px);
 }
 
+.pathway-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
 /* Feature Grids */
 .feature-grid-2 {
   display: grid;
