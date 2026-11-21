@@ -39,6 +39,10 @@ ui-debug.log*
 hub-debug.log*
 auth-debug.log*
 
+# Firebase emulator artifacts
+.firebase/
+firebase-export-*/
+
 # Logs
 logs/
 *.log

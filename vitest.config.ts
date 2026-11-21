@@ -7,6 +7,9 @@ export default defineConfig({
     environment: 'happy-dom',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
+    // The suite is small, so a single worker keeps memory use predictable on
+    // low-RAM machines while the emulator and dev server are running.
+    maxWorkers: 1,
+    minWorkers: 1,
   },
 });
-

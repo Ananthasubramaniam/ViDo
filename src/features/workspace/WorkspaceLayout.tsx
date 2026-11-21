@@ -1,12 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import { Routes, Route, useLocation, useNavigate, Link, Navigate, useParams } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import { SAMPLE_TASKS, SampleTask } from '../../data/sampleTasks';
+import React, { useEffect, useState } from 'react';
+import {
+  Routes,
+  Route,
+  useLocation,
+  useNavigate,
+  Link,
+  Navigate,
+  useParams,
+} from 'react-router-dom';
+import { AlertCircle, ArrowLeft } from 'lucide-react';
+import {
+  BENCHMARK_DATE_STR,
+  SAMPLE_TASKS,
+  type SampleTask,
+} from '../../data/sampleTasks';
 import { getFilteredTasks, getHomeDashboardTasks } from '../../data/taskFilters';
+import { todayISO } from '../../data/calendar';
 import { WorkspaceSidebar } from './WorkspaceSidebar';
 import { WorkspaceTopBar } from './WorkspaceTopBar';
 import { HomeView } from './views/HomeView';
 import { ListView } from './views/ListView';
+import { CalendarView } from './views/CalendarView';
+import { AnalyticsView } from './views/AnalyticsView';
 import { TaskDetailModal } from './TaskDetailModal';
 import { TaskCreateModal } from './TaskCreateModal';
 import { useAuth } from '../auth';
@@ -14,6 +29,8 @@ import { TeamSpaceView } from '../teams/TeamSpaceView';
 import { CreateTeamModal } from '../teams/CreateTeamModal';
 import { getTeamRepository } from '../teams/teamRepository';
 import { Team } from '../teams/types';
+import { useCalendar } from './useCalendar';
+import { usePlanningTargets } from './usePlanningTargets';
 
 export interface WorkspaceLayoutProps {
   isPreview?: boolean;
@@ -39,8 +56,9 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
     explicitIsPreview !== undefined
       ? explicitIsPreview
       : location.pathname.startsWith('/preview');
-
+  const isLive = !isPreview;
   const basePath = isPreview ? '/preview' : '/workspace';
+  const referenceDate = isPreview ? BENCHMARK_DATE_STR : todayISO();
 
   const user = isPreview
     ? { id: 'demo-user-uid', name: 'Demo User', email: 'demo@vido.app' }
@@ -59,7 +77,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
       const repo = getTeamRepository();
       const userTeams = await repo.getTeams(user.id);
       setTeams(userTeams);
-    } catch (e) {
+    } catch {
       // Ignore
     }
   };
@@ -74,8 +92,15 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
     return () => window.removeEventListener('focus', handleFocus);
   }, [user.id, user.email, isPreview, loading]);
 
+  // Calendar events and planning targets live in Firestore for signed-in
+  // users and in localStorage for the shareable preview.
+  const calendar = useCalendar(authUser?.uid, isLive ? 'live' : 'demo');
+  const planningTargets = usePlanningTargets(authUser?.uid, isLive ? 'live' : 'demo');
+
   // Task state: for preview, use SAMPLE_TASKS. For authenticated users, scope to user ID.
-  const userStorageKey = authUser ? `vido_tasks_${authUser.uid}` : 'vido_live_workspace_tasks';
+  const userStorageKey = authUser
+    ? `vido_tasks_${authUser.uid}`
+    : 'vido_live_workspace_tasks';
 
   const [tasks, setTasks] = useState<SampleTask[]>(() => {
     if (isPreview) {
@@ -87,7 +112,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) return parsed;
       }
-    } catch (e) {
+    } catch {
       // Fallback
     }
     // New users start with a clean, empty personal workspace
@@ -106,7 +131,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
             return;
           }
         }
-      } catch (e) {
+      } catch {
         // Ignore
       }
       setTasks([]);
@@ -117,7 +142,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
     if (!isPreview && authUser) {
       try {
         localStorage.setItem(`vido_tasks_${authUser.uid}`, JSON.stringify(tasks));
-      } catch (e) {
+      } catch {
         // Ignore quota errors
       }
     }
@@ -130,6 +155,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
 
   const views = getFilteredTasks(tasks);
   const dashboard = getHomeDashboardTasks(tasks);
+  const syncError = calendar.error ?? planningTargets.error;
 
   // Authentication guards: evaluated AFTER all hooks have executed unconditionally
   if (!isPreview && loading) {
@@ -210,7 +236,10 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   const getHeaderInfo = () => {
     const path = location.pathname;
     if (path.endsWith('/tasks')) {
-      return { title: 'Tasks', subtitle: 'Manage, filter, and track all your active responsibilities' };
+      return {
+        title: 'Tasks',
+        subtitle: 'Manage, filter, and track all your active responsibilities',
+      };
     }
     if (path.endsWith('/today')) {
       return { title: 'Today', subtitle: 'Responsibilities due on 17 November 2026' };
@@ -227,12 +256,25 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
     if (path.endsWith('/archived')) {
       return { title: 'Archived', subtitle: 'Shelved and preserved task history' };
     }
+    if (path.endsWith('/calendar')) {
+      return {
+        title: 'Planning Calendar',
+        subtitle: 'Weekly and monthly view of tasks and calendar commitments',
+      };
+    }
+    if (path.endsWith('/analytics')) {
+      return {
+        title: 'Completion Analytics',
+        subtitle: 'Weekly completion, targets, and monthly goal progress',
+      };
+    }
     if (path.includes('/team/')) {
       const activeTeamId = path.split('/team/')[1]?.split('/')[0];
       const currentTeam = teams.find((t) => t.id === activeTeamId);
       return {
         title: currentTeam?.name || 'Team Workspace',
-        subtitle: currentTeam?.description || 'Collaborative team deliverables and phased milestones',
+        subtitle:
+          currentTeam?.description || 'Collaborative team deliverables and phased milestones',
       };
     }
     return {
@@ -270,7 +312,8 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                 DEMO PREVIEW
               </span>
               <p className="text-xs text-gray-200 truncate hidden md:block">
-                <span className="font-semibold text-white">Interactive Demo:</span> You are exploring ViDo with mock data. Real account sync is disabled.
+                <span className="font-semibold text-white">Interactive Demo:</span> You are exploring
+                ViDo with mock data. Real account sync is disabled.
               </p>
             </div>
           </div>
@@ -279,6 +322,16 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
             Preview Mode
           </div>
         </aside>
+      )}
+
+      {syncError && (
+        <div
+          role="alert"
+          className="bg-red-50 border-b border-red-200 text-red-700 px-6 py-2.5 text-xs flex items-center gap-2"
+        >
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span className="truncate">{syncError}</span>
+        </div>
       )}
 
       {/* Main Workspace Body */}
@@ -421,6 +474,39 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                     description="Shelved tasks preserved with their complete checkpoint history."
                     tasks={views.archived}
                     onTaskClick={handleTaskClick}
+                  />
+                }
+              />
+              <Route
+                path="calendar"
+                element={
+                  <CalendarView
+                    tasks={tasks}
+                    events={calendar.events}
+                    onCreateEvent={(event) => {
+                      void calendar.addEvent(event).catch(() => undefined);
+                    }}
+                    onDeleteEvent={(eventId) => {
+                      void calendar.deleteEvent(eventId).catch(() => undefined);
+                    }}
+                    onCreateTask={handleCreateTask}
+                    onTaskClick={handleTaskClick}
+                    referenceDate={referenceDate}
+                    mode={isLive ? 'live' : 'demo'}
+                  />
+                }
+              />
+              <Route
+                path="analytics"
+                element={
+                  <AnalyticsView
+                    tasks={tasks}
+                    targets={planningTargets.targets}
+                    onTargetsChange={(next) => {
+                      void planningTargets.setTargets(next).catch(() => undefined);
+                    }}
+                    referenceDate={referenceDate}
+                    mode={isLive ? 'live' : 'demo'}
                   />
                 }
               />

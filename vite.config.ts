@@ -31,18 +31,26 @@ function firebaseEmulatorPlugin(): Plugin {
   let emulatorProcess: ChildProcess | null = null;
 
   return {
-    name: 'firebase-auth-emulator',
+    name: 'firebase-emulators',
     apply: 'serve',
     async configureServer(server) {
-      const port = 9099;
-      const isRunning = await checkPort(port);
+      const authPort = 9099;
+      const firestorePort = 8080;
+      const [authRunning, firestoreRunning] = await Promise.all([
+        checkPort(authPort),
+        checkPort(firestorePort),
+      ]);
 
-      if (isRunning) {
-        console.log(`\n\x1b[32m[ViDo Auth]\x1b[0m Firebase Auth Emulator is active on http://localhost:${port}\n`);
+      if (authRunning && firestoreRunning) {
+        console.log(
+          `\n\x1b[32m[ViDo Emulators]\x1b[0m Auth :${authPort} and Firestore :${firestorePort} are active.\n`
+        );
         return;
       }
 
-      console.log(`\n\x1b[33m[ViDo Auth]\x1b[0m Checking Firebase Auth Emulator status on port ${port}...`);
+      console.log(
+        `\n\x1b[33m[ViDo Emulators]\x1b[0m Checking local Firebase emulator ports...\n`
+      );
 
       // Check if Java is available
       let hasJava = false;
@@ -55,8 +63,8 @@ function firebaseEmulatorPlugin(): Plugin {
 
       if (!hasJava) {
         console.warn(
-          `\x1b[31m[ViDo Auth]\x1b[0m Java 11+ is required for the Firebase Auth Emulator.\n` +
-          `           Please install Java to run the local Auth emulator, or configure live Firebase keys in .env.local.\n`
+          `\x1b[31m[ViDo Emulators]\x1b[0m Java 11+ is required for the Firebase emulators.\n` +
+            `           Install Java or run "npm run emu" in a separate terminal.\n`
         );
         return;
       }
@@ -69,10 +77,26 @@ function firebaseEmulatorPlugin(): Plugin {
         firebaseCmd = 'npx firebase';
       }
 
-      console.log(`\x1b[36m[ViDo Auth]\x1b[0m Automatically starting Firebase Auth Emulator on port ${port}...\n`);
+      const only = [
+        !authRunning ? 'auth' : null,
+        !firestoreRunning ? 'firestore' : null,
+      ]
+        .filter(Boolean)
+        .join(',');
+
+      console.log(
+        `\x1b[36m[ViDo Emulators]\x1b[0m Starting missing emulator(s): ${only}...\n`
+      );
 
       const [cmd, ...args] = firebaseCmd.split(' ');
-      const fullArgs = [...args, 'emulators:start', '--only', 'auth', '--project', 'demo-vido'];
+      const fullArgs = [
+        ...args,
+        'emulators:start',
+        '--only',
+        only,
+        '--project',
+        'demo-vido',
+      ];
 
       emulatorProcess = spawn(cmd, fullArgs, {
         shell: true,
@@ -80,16 +104,24 @@ function firebaseEmulatorPlugin(): Plugin {
       });
 
       emulatorProcess.on('error', (err) => {
-        console.warn(`\x1b[31m[ViDo Auth]\x1b[0m Failed to spawn Firebase emulator:`, err.message);
+        console.warn(
+          `\x1b[31m[ViDo Emulators]\x1b[0m Failed to spawn Firebase emulator:`,
+          err.message
+        );
       });
 
-      // Poll until port 9099 is listening (up to 15 seconds)
+      // Poll until both required ports are listening (up to 15 seconds)
       const maxAttempts = 30;
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         await new Promise((res) => setTimeout(res, 500));
-        const ready = await checkPort(port);
-        if (ready) {
-          console.log(`\n\x1b[32m[ViDo Auth]\x1b[0m ✓ Firebase Auth Emulator is ready at http://localhost:${port}\n`);
+        const ready = await Promise.all([
+          checkPort(authPort),
+          checkPort(firestorePort),
+        ]);
+        if (ready.every(Boolean)) {
+          console.log(
+            `\n\x1b[32m[ViDo Emulators]\x1b[0m ✓ Auth :${authPort} and Firestore :${firestorePort} are ready.\n`
+          );
           break;
         }
       }
@@ -98,7 +130,9 @@ function firebaseEmulatorPlugin(): Plugin {
         if (emulatorProcess && !emulatorProcess.killed) {
           try {
             if (process.platform === 'win32') {
-              execSync(`taskkill /pid ${emulatorProcess.pid} /T /F`, { stdio: 'ignore' });
+              execSync(`taskkill /pid ${emulatorProcess.pid} /T /F`, {
+                stdio: 'ignore',
+              });
             } else {
               emulatorProcess.kill('SIGTERM');
             }
