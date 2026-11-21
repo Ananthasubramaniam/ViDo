@@ -49,8 +49,8 @@ export function getDefaultDueTime(d: Date = new Date()): string {
 export interface ChronologicalValidationOptions {
   dueDate: string;
   dueTime?: string;
-  isBackdated?: boolean;
   startDate?: string;
+  isBackdated?: boolean;
   startTime?: string;
   now?: Date;
 }
@@ -68,13 +68,12 @@ export interface ChronologicalValidationResult {
 
 /**
  * Validates chronological integrity of task start time and deadline:
- * 1. Default creation time is Date.now() unless explicitly backdated.
+ * 1. Default creation time is Date.now() unless explicitly provided via optional Start Date.
  * 2. Backdating is allowed up to 7 calendar days in the past; earlier dates are blocked.
- * 3. Start date/time cannot be in the future.
- * 4. Deadline must occur strictly after start / creation time (deadline > start).
- *    - If deadline date == start date, deadline time must be strictly after start time.
- *    - If no deadline time is entered, it automatically defaults to end-of-day (11:59 PM).
- *    - Future dates after the start date allow any valid time of day.
+ * 3. Start date cannot be in the future.
+ * 4. Deadline date must always fall on or after the start date (deadline >= startDate).
+ *    - Same-Day Tasks: If start date and deadline date are the same, deadline can be set to any valid time today (or defaults to 11:59 PM if left blank).
+ *    - Future dates after start date allow any valid time of day.
  * 5. Dates older than 7 days in the past are blocked.
  */
 export function validateChronologicalDeadline(
@@ -89,16 +88,15 @@ export function validateChronologicalDeadline(
   let effectiveStartTime = currentTimeStr;
   let effectiveCreatedAt = now.toISOString();
 
-  // 1. Validate Start Time / Backdating
-  if (options.isBackdated) {
-    const rawStartDate = options.startDate?.trim() || todayStr;
-    const rawStartTime = options.startTime?.trim() || '00:00';
+  const rawStartDate = options.startDate?.trim();
 
+  // 1. Validate Start Date if provided (or if legacy isBackdated flag is true)
+  if (rawStartDate) {
     if (rawStartDate < sevenDaysAgoStr) {
       return {
         isValid: false,
-        startError: 'Date is beyond the 7-day logging window.',
-        generalError: 'Date is beyond the 7-day logging window. Work can only be backdated by up to 7 days.',
+        startError: 'Start date cannot be older than 7 days.',
+        generalError: 'Start date cannot be older than 7 days. Date is beyond the 7-day logging window.',
         effectiveCreatedAt,
         effectiveDueDate: options.dueDate,
         effectiveDueTime: options.dueTime || '23:59',
@@ -116,22 +114,16 @@ export function validateChronologicalDeadline(
       };
     }
 
-    if (rawStartDate === todayStr && rawStartTime > currentTimeStr) {
-      return {
-        isValid: false,
-        startError: 'Start time cannot be in the future.',
-        generalError: 'Start time cannot be in the future.',
-        effectiveCreatedAt,
-        effectiveDueDate: options.dueDate,
-        effectiveDueTime: options.dueTime || '23:59',
-      };
-    }
-
     effectiveStartDate = rawStartDate;
+    const rawStartTime = options.startTime?.trim() || '12:00';
     effectiveStartTime = rawStartTime;
 
     const parsedStart = new Date(`${rawStartDate}T${rawStartTime}:00`);
     effectiveCreatedAt = isNaN(parsedStart.getTime()) ? now.toISOString() : parsedStart.toISOString();
+  } else if (options.isBackdated) {
+    // Backwards-compatibility fallback when isBackdated is explicitly set but startDate was not
+    effectiveStartDate = todayStr;
+    effectiveStartTime = options.startTime?.trim() || currentTimeStr;
   }
 
   // 2. Validate Target Due Date
@@ -164,12 +156,12 @@ export function validateChronologicalDeadline(
   const effectiveDueTime = rawDueTime ? rawDueTime : '23:59';
   const effectiveDueDate = rawDueDate;
 
-  // 3. Chronological check: deadline must be strictly after start
+  // 3. Chronological check: deadline must be on or after start date
   if (effectiveDueDate < effectiveStartDate) {
     return {
       isValid: false,
-      dateError: 'Deadline must be later than the start time.',
-      generalError: 'Deadline must be later than the start time.',
+      dateError: 'Deadline date must be on or after start date.',
+      generalError: 'Deadline date must be on or after start date.',
       effectiveCreatedAt,
       effectiveDueDate,
       effectiveDueTime,
@@ -177,13 +169,24 @@ export function validateChronologicalDeadline(
   }
 
   if (effectiveDueDate === effectiveStartDate) {
-    if (effectiveDueTime <= effectiveStartTime) {
-      const timeError = options.isBackdated
-        ? 'Deadline must be later than the start time.'
-        : `Deadline time must be after the start time (current time is ${effectiveStartTime}).`;
+    // If start date is today and deadline is today, ensure time is not in the past if provided
+    if (effectiveStartDate === todayStr && effectiveDueTime <= effectiveStartTime) {
+      const timeError = `Deadline time must be after the start time (current time is ${effectiveStartTime}).`;
       return {
         isValid: false,
         timeError,
+        generalError: 'Deadline must be later than the start time.',
+        effectiveCreatedAt,
+        effectiveDueDate,
+        effectiveDueTime,
+      };
+    }
+
+    // If backdated with a start time and same-day deadline with time earlier than start time
+    if (rawStartDate && options.startTime && effectiveDueTime <= options.startTime) {
+      return {
+        isValid: false,
+        timeError: 'Deadline must be later than the start time.',
         generalError: 'Deadline must be later than the start time.',
         effectiveCreatedAt,
         effectiveDueDate,

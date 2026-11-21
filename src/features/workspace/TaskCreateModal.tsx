@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Button, Input } from '../../components/ui';
 import { SampleTask } from '../../data/sampleTasks';
-import { X, Tag, CheckCircle2, AlertCircle, History } from 'lucide-react';
+import { X, Tag, CheckCircle2, AlertCircle } from 'lucide-react';
 import {
   getTodayDateString,
   getSevenDaysAgoDateString,
@@ -14,6 +14,7 @@ export interface TaskCreateModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCreateTask?: (task: SampleTask) => void;
+  initialStartDate?: string;
   initialDueDate?: string;
   initialDueTime?: string;
 }
@@ -22,16 +23,15 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
   isOpen,
   onClose,
   onCreateTask,
+  initialStartDate,
   initialDueDate,
   initialDueTime,
 }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [startDate, setStartDate] = useState(() => initialStartDate || '');
   const [dueDate, setDueDate] = useState(() => initialDueDate || getTodayDateString());
   const [dueTime, setDueTime] = useState(() => initialDueTime || getDefaultDueTime());
-  const [isBackdated, setIsBackdated] = useState(false);
-  const [startDate, setStartDate] = useState(() => getTodayDateString());
-  const [startTime, setStartTime] = useState(() => getCurrentTimeString());
   const [priority, setPriority] = useState<'high' | 'medium' | 'low' | ''>('medium');
   const [category, setCategory] = useState<'personal' | 'home' | 'work'>('personal');
   const [submittedNotice, setSubmittedNotice] = useState(false);
@@ -45,13 +45,11 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
   // Compute live validation using useMemo
   const validation = useMemo(() => {
     return validateChronologicalDeadline({
+      startDate,
       dueDate,
       dueTime,
-      isBackdated,
-      startDate,
-      startTime,
     });
-  }, [dueDate, dueTime, isBackdated, startDate, startTime]);
+  }, [startDate, dueDate, dueTime]);
 
   const isFormValid = Boolean(title.trim()) && validation.isValid;
 
@@ -78,19 +76,6 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleBackdateToggle = (checked: boolean) => {
-    setIsBackdated(checked);
-    if (checked) {
-      // Default backdate start date to yesterday or today if not set
-      if (!startDate) {
-        setStartDate(getTodayDateString());
-      }
-      if (!startTime) {
-        setStartTime('09:00');
-      }
-    }
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !validation.isValid) return;
@@ -99,6 +84,7 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
       id: `task-${Date.now()}`,
       title: title.trim(),
       description: description.trim() || undefined,
+      startDate: startDate.trim() || undefined,
       dueDate: validation.effectiveDueDate,
       dueTime: validation.effectiveDueTime,
       priority: (priority as 'high' | 'medium' | 'low') || undefined,
@@ -109,8 +95,8 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
         {
           id: `cp-${Date.now()}`,
           timestamp: validation.effectiveCreatedAt,
-          note: isBackdated
-            ? 'Task initialized in workspace (retrospective entry).'
+          note: startDate.trim()
+            ? `Task initialized in workspace (started on ${startDate.trim()}).`
             : 'Task initialized in workspace.',
         },
       ],
@@ -122,9 +108,7 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
     // Reset inputs
     setTitle('');
     setDescription('');
-    setIsBackdated(false);
-    setStartDate(getTodayDateString());
-    setStartTime(getCurrentTimeString());
+    setStartDate('');
     setDueDate(getTodayDateString());
     setDueTime(getDefaultDueTime());
     setPriority('medium');
@@ -205,73 +189,38 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
             />
           </div>
 
-          {/* Backdate Start Option (1-Week Grace Period) */}
-          <div className="p-3 bg-[var(--canvas)] border border-[var(--line)] rounded-xl space-y-2.5">
-            <label className="flex items-center gap-2 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                aria-label="Backdate task start"
-                checked={isBackdated}
-                onChange={(e) => handleBackdateToggle(e.target.checked)}
-                className="w-4 h-4 rounded border-[var(--line)] text-[var(--accent)] focus:ring-[var(--accent)] cursor-pointer"
-              />
-              <span className="text-xs font-semibold text-[var(--ink)] flex items-center gap-1.5">
-                <History className="w-3.5 h-3.5 text-[var(--muted)]" />
-                Backdate task start (1-week grace period for retrospective logging)
-              </span>
-            </label>
-
-            {isBackdated ? (
-              <div className="pt-2 border-t border-[var(--line)] space-y-2 animate-in fade-in duration-150">
-                <p className="text-[11px] text-[var(--muted)]">
-                  Log work that started within the last 7 days. Dates older than {sevenDaysAgoStr} are blocked.
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <Input
-                    label="Started Date *"
-                    type="date"
-                    required
-                    min={sevenDaysAgoStr}
-                    max={todayStr}
-                    value={startDate}
-                    error={validation.startError}
-                    onChange={(e) => setStartDate(e.target.value)}
-                  />
-                  <Input
-                    label="Started Time (Optional)"
-                    type="time"
-                    value={startTime}
-                    helperText="Defaults to 00:00 if omitted"
-                    onChange={(e) => setStartTime(e.target.value)}
-                  />
-                </div>
-              </div>
-            ) : (
-              <p className="text-[11px] text-[var(--muted)] pl-6">
-                Starts automatically at current time ({todayStr} {currentTimeStr}).
-              </p>
-            )}
-          </div>
-
-          {/* Target Due Date & Time */}
+          {/* Date & Time Selection */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input
+              label="Start Date (Optional)"
+              type="date"
+              min={sevenDaysAgoStr}
+              max={todayStr}
+              value={startDate}
+              error={validation.startError}
+              helperText="Leave blank to start now (max 7 days in past)"
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+
             <Input
               label="Target Due Date *"
               type="date"
               required
-              min={isBackdated ? startDate || sevenDaysAgoStr : sevenDaysAgoStr}
+              min={startDate || sevenDaysAgoStr}
               value={dueDate}
               error={validation.dateError}
               onChange={(e) => setDueDate(e.target.value)}
             />
+          </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input
               label="Due Time (Optional)"
               type="time"
               value={dueTime}
               error={validation.timeError}
               helperText={
-                isSelectedDateToday && !isBackdated
+                isSelectedDateToday && !startDate
                   ? `Must be after ${currentTimeStr} (defaults to 11:59 PM if omitted)`
                   : 'Defaults to 11:59 PM if omitted'
               }

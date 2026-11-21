@@ -40,7 +40,7 @@ describe('dateUtils', () => {
           now: mockNow,
         });
         expect(res.isValid).toBe(false);
-        expect(res.dateError).toMatch(/deadline must be later than the start time/i);
+        expect(res.dateError).toMatch(/deadline date must be on or after start date/i);
       });
 
       it('same-day: blocks selecting deadline time earlier than or equal to current time (6:00 PM)', () => {
@@ -100,28 +100,24 @@ describe('dateUtils', () => {
       it('allows backdating start date up to 7 days in the past (boundary check: exactly 7 days ago)', () => {
         // Nov 12 is exactly 7 days before Nov 19
         const res = validateChronologicalDeadline({
-          isBackdated: true,
           startDate: '2026-11-12',
-          startTime: '09:00',
           dueDate: '2026-11-13',
           dueTime: '17:00',
           now: mockNow,
         });
         expect(res.isValid).toBe(true);
-        expect(res.effectiveCreatedAt).toBe(new Date('2026-11-12T09:00:00').toISOString());
+        expect(res.effectiveCreatedAt).toBe(new Date('2026-11-12T12:00:00').toISOString());
       });
 
-      it('blocks dates older than 7 days in the past (boundary check: 8 days ago)', () => {
+      it('blocks start dates older than 7 days in the past (boundary check: 8 days ago)', () => {
         // Nov 11 is 8 days before Nov 19
         const resStart = validateChronologicalDeadline({
-          isBackdated: true,
           startDate: '2026-11-11',
-          startTime: '09:00',
           dueDate: '2026-11-19',
           now: mockNow,
         });
         expect(resStart.isValid).toBe(false);
-        expect(resStart.startError).toMatch(/7-day logging window/i);
+        expect(resStart.startError).toMatch(/start date cannot be older than 7 days/i);
 
         // Same for deadline date older than 7 days
         const resDue = validateChronologicalDeadline({
@@ -134,7 +130,6 @@ describe('dateUtils', () => {
 
       it('blocks start date in the future', () => {
         const res = validateChronologicalDeadline({
-          isBackdated: true,
           startDate: '2026-11-20',
           dueDate: '2026-11-21',
           now: mockNow,
@@ -143,40 +138,32 @@ describe('dateUtils', () => {
         expect(res.startError).toMatch(/start date cannot be in the future/i);
       });
 
-      it('enforces deadline scheduled strictly after backdated start time', () => {
-        // Started 3 days ago (Nov 16 at 10:00), deadline scheduled 3 days ago at 09:00 (before start)
-        const resBefore = validateChronologicalDeadline({
-          isBackdated: true,
-          startDate: '2026-11-16',
-          startTime: '10:00',
-          dueDate: '2026-11-16',
-          dueTime: '09:00',
-          now: mockNow,
-        });
-        expect(resBefore.isValid).toBe(false);
-        expect(resBefore.timeError).toMatch(/deadline must be later than the start time/i);
-
-        // Started 3 days ago (Nov 16 at 10:00), deadline scheduled 4 days ago (Nov 15)
+      it('enforces deadline date scheduled on or after start date (deadline >= startDate)', () => {
+        // Started 3 days ago (Nov 16), deadline scheduled 4 days ago (Nov 15) -> blocked
         const resDateBefore = validateChronologicalDeadline({
-          isBackdated: true,
           startDate: '2026-11-16',
-          startTime: '10:00',
           dueDate: '2026-11-15',
           now: mockNow,
         });
         expect(resDateBefore.isValid).toBe(false);
-        expect(resDateBefore.dateError).toMatch(/deadline must be later than the start time/i);
+        expect(resDateBefore.dateError).toMatch(/deadline date must be on or after start date/i);
 
-        // Started 3 days ago (Nov 16 at 10:00), deadline scheduled 3 days ago at 15:00 (after start)
-        const resValid = validateChronologicalDeadline({
-          isBackdated: true,
+        // Started 3 days ago (Nov 16), deadline scheduled on same day (Nov 16) -> valid
+        const resSameDay = validateChronologicalDeadline({
           startDate: '2026-11-16',
-          startTime: '10:00',
           dueDate: '2026-11-16',
           dueTime: '15:00',
           now: mockNow,
         });
-        expect(resValid.isValid).toBe(true);
+        expect(resSameDay.isValid).toBe(true);
+
+        // Started 3 days ago (Nov 16), deadline scheduled in future relative to start (Nov 18) -> valid
+        const resMultiDay = validateChronologicalDeadline({
+          startDate: '2026-11-16',
+          dueDate: '2026-11-18',
+          now: mockNow,
+        });
+        expect(resMultiDay.isValid).toBe(true);
       });
     });
 

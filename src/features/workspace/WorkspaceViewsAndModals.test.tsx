@@ -306,7 +306,7 @@ describe('Workspace Views and Modals', () => {
       }
     });
 
-    it('supports 1-week grace period backdating and enforces deadline > start time', () => {
+    it('supports 1-week grace period backdating and enforces deadline >= start date', () => {
       const handleClose = vi.fn();
       const handleCreate = vi.fn();
 
@@ -321,12 +321,8 @@ describe('Workspace Views and Modals', () => {
       const titleInput = screen.getByLabelText(/task title \*/i);
       fireEvent.change(titleInput, { target: { value: 'Retrospective Task' } });
 
-      // Enable backdating toggle
-      const backdateCheckbox = screen.getByLabelText(/backdate task start/i);
-      fireEvent.click(backdateCheckbox);
-
-      // Verify backdating inputs appear
-      const startDateInput = screen.getByLabelText(/started date \*/i);
+      // Start Date input is directly accessible (optional, date-only)
+      const startDateInput = screen.getByLabelText(/start date \(optional\)/i);
       expect(startDateInput).toBeInTheDocument();
 
       // Backdate start to 3 days ago
@@ -334,7 +330,7 @@ describe('Workspace Views and Modals', () => {
       const threeDaysAgoStr = `${threeDaysAgo.getFullYear()}-${String(threeDaysAgo.getMonth() + 1).padStart(2, '0')}-${String(threeDaysAgo.getDate()).padStart(2, '0')}`;
       fireEvent.change(startDateInput, { target: { value: threeDaysAgoStr } });
 
-      // Set deadline to 2 days ago (which is after start time and within 7-day window)
+      // Set deadline to 2 days ago (which is after start date and within 7-day window)
       const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
       const twoDaysAgoStr = `${twoDaysAgo.getFullYear()}-${String(twoDaysAgo.getMonth() + 1).padStart(2, '0')}-${String(twoDaysAgo.getDate()).padStart(2, '0')}`;
       const dueDateInput = screen.getByLabelText(/target due date \*/i);
@@ -346,13 +342,67 @@ describe('Workspace Views and Modals', () => {
 
       expect(handleCreate).toHaveBeenCalledTimes(1);
       const taskCreated = handleCreate.mock.calls[0][0];
+      expect(taskCreated.startDate).toBe(threeDaysAgoStr);
       expect(taskCreated.dueDate).toBe(twoDaysAgoStr);
       expect(taskCreated.createdAt).toContain(threeDaysAgoStr);
       expect(handleClose).toHaveBeenCalledTimes(1);
     });
 
+    it('blocks setting start date older than 7 days in the past and disables submit button', () => {
+      const handleCreate = vi.fn();
+
+      render(<TaskCreateModal isOpen={true} onClose={vi.fn()} onCreateTask={handleCreate} />);
+
+      const titleInput = screen.getByLabelText(/task title \*/i);
+      fireEvent.change(titleInput, { target: { value: 'Very Old Started Task' } });
+
+      const startDateInput = screen.getByLabelText(/start date \(optional\)/i);
+      fireEvent.change(startDateInput, { target: { value: '2020-01-01' } });
+
+      const saveBtn = screen.getByRole('button', { name: /^create task$/i });
+      expect(saveBtn).toBeDisabled();
+      fireEvent.click(saveBtn);
+
+      expect(handleCreate).not.toHaveBeenCalled();
+      expect(screen.getAllByText(/start date cannot be older than 7 days/i).length).toBeGreaterThan(0);
+    });
+
+    it('blocks setting deadline date earlier than start date and disables submit button', () => {
+      const handleCreate = vi.fn();
+
+      render(<TaskCreateModal isOpen={true} onClose={vi.fn()} onCreateTask={handleCreate} />);
+
+      const titleInput = screen.getByLabelText(/task title \*/i);
+      fireEvent.change(titleInput, { target: { value: 'Inverted Dates Task' } });
+
+      // Start 2 days ago
+      const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+      const twoDaysAgoStr = `${twoDaysAgo.getFullYear()}-${String(twoDaysAgo.getMonth() + 1).padStart(2, '0')}-${String(twoDaysAgo.getDate()).padStart(2, '0')}`;
+      const startDateInput = screen.getByLabelText(/start date \(optional\)/i);
+      fireEvent.change(startDateInput, { target: { value: twoDaysAgoStr } });
+
+      // Deadline 3 days ago (earlier than start date)
+      const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+      const threeDaysAgoStr = `${threeDaysAgo.getFullYear()}-${String(threeDaysAgo.getMonth() + 1).padStart(2, '0')}-${String(threeDaysAgo.getDate()).padStart(2, '0')}`;
+      const dueDateInput = screen.getByLabelText(/target due date \*/i);
+      fireEvent.change(dueDateInput, { target: { value: threeDaysAgoStr } });
+
+      const saveBtn = screen.getByRole('button', { name: /^create task$/i });
+      expect(saveBtn).toBeDisabled();
+      fireEvent.click(saveBtn);
+
+      expect(handleCreate).not.toHaveBeenCalled();
+      expect(screen.getAllByText(/deadline date must be on or after start date/i).length).toBeGreaterThan(0);
+    });
+
     it('sets min attribute on date inputs to disallow dates older than 7 days ago', () => {
       render(<TaskCreateModal isOpen={true} onClose={vi.fn()} />);
+
+      const startDateInput = screen.getByLabelText(/start date \(optional\)/i);
+      expect(startDateInput).toHaveAttribute('min');
+      expect(startDateInput).toHaveAttribute('max');
+      expect(startDateInput.getAttribute('min')).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(startDateInput.getAttribute('max')).toMatch(/^\d{4}-\d{2}-\d{2}$/);
 
       const dateInput = screen.getByLabelText(/target due date \*/i);
       expect(dateInput).toHaveAttribute('min');
