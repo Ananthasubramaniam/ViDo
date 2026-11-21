@@ -90,8 +90,8 @@ describe('Workspace Views and Modals', () => {
       expect(screen.getByRole('heading', { name: /tasks/i })).toBeInTheDocument();
     });
 
-    it('switches between Dashboard and Tasks tabs seamlessly', () => {
-      render(
+    it('renders Dashboard by default and Tasks view when initialTab is tasks without in-page dual navigation', () => {
+      const { rerender } = render(
         <MemoryRouter>
           <HomeView tasks={SAMPLE_TASKS} onTaskClick={vi.fn()} />
         </MemoryRouter>
@@ -100,21 +100,21 @@ describe('Workspace Views and Modals', () => {
       // Initially on Dashboard
       expect(screen.getByText(/welcome back, demo user/i)).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: /add filter/i })).not.toBeInTheDocument();
+      // Verify in-page dual navigation tablist is NOT rendered
+      expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
 
-      // Click Tasks tab
-      const tasksTab = screen.getByRole('tab', { name: /tasks/i });
-      fireEvent.click(tasksTab);
+      // Render with initialTab="tasks"
+      rerender(
+        <MemoryRouter>
+          <HomeView tasks={SAMPLE_TASKS} onTaskClick={vi.fn()} initialTab="tasks" />
+        </MemoryRouter>
+      );
 
       // Now on Tasks view
       expect(screen.getByRole('button', { name: /add filter/i })).toBeInTheDocument();
       expect(screen.queryByText(/welcome back, demo user/i)).not.toBeInTheDocument();
-
-      // Click Dashboard tab
-      const dashboardTab = screen.getByRole('tab', { name: /dashboard/i });
-      fireEvent.click(dashboardTab);
-
-      // Back to Dashboard
-      expect(screen.getByText(/welcome back, demo user/i)).toBeInTheDocument();
+      // Verify in-page dual navigation tablist is NOT rendered
+      expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
     });
 
     it('does not show completed tasks in the tasks section', () => {
@@ -233,6 +233,36 @@ describe('Workspace Views and Modals', () => {
       // Sidebar two primary tabs exist: Dashboard and Tasks
       expect(screen.getByRole('link', { name: /dashboard/i })).toBeInTheDocument();
       expect(screen.getByRole('link', { name: /tasks/i })).toBeInTheDocument();
+    });
+
+    it('navigates between Dashboard and Tasks via sidebar without in-page dual navigation', () => {
+      render(
+        <MemoryRouter initialEntries={['/preview']}>
+          <Routes>
+            <Route path="/preview/*" element={<WorkspaceLayout />} />
+          </Routes>
+        </MemoryRouter>
+      );
+
+      // On Dashboard: Hero overview is visible, in-page tablist is NOT present
+      expect(screen.getByText(/welcome back, demo user/i)).toBeInTheDocument();
+      expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+
+      // Click Tasks in sidebar
+      const tasksLink = screen.getByRole('link', { name: /tasks/i });
+      fireEvent.click(tasksLink);
+
+      // Now on Tasks view: Filter builder is visible, in-page tablist is NOT present
+      expect(screen.getByRole('button', { name: /add filter/i })).toBeInTheDocument();
+      expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+
+      // Click Dashboard in sidebar
+      const dashboardLink = screen.getByRole('link', { name: /dashboard/i });
+      fireEvent.click(dashboardLink);
+
+      // Back to Dashboard
+      expect(screen.getByText(/welcome back, demo user/i)).toBeInTheDocument();
+      expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
     });
 
     it('creates a task and displays it in the view when New Task form is submitted', () => {
