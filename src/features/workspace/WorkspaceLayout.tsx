@@ -339,6 +339,10 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                 }
               />
               <Route
+                path="dashboard"
+                element={<Navigate to={basePath} replace />}
+              />
+              <Route
                 path="tasks"
                 element={
                   <HomeView
