@@ -59,4 +59,26 @@ describe('WorkspaceTopBar', () => {
     fireEvent.click(screen.getByRole('button', { name: /notifications: 1 pending/i }));
     expect(screen.getByText('Beta Launch')).toBeInTheDocument();
   });
+
+  it('renders current date dynamically in top bar badge', () => {
+    render(
+      <MemoryRouter>
+        <WorkspaceTopBar title="Date Test" />
+      </MemoryRouter>
+    );
+
+    const dateBadge = screen.getByTestId('topbar-date');
+    expect(dateBadge).toBeInTheDocument();
+    expect(dateBadge.textContent).not.toBe('');
+  });
+
+  it('renders custom currentDate prop when provided', () => {
+    render(
+      <MemoryRouter>
+        <WorkspaceTopBar title="Date Test" currentDate="Friday, 25 Dec 2026" />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('Friday, 25 Dec 2026')).toBeInTheDocument();
+  });
 });

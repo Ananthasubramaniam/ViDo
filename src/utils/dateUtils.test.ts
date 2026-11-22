@@ -6,6 +6,7 @@ import {
   getDefaultDueTime,
   validateDeadline,
   validateChronologicalDeadline,
+  formatTopBarDate,
 } from './dateUtils';
 
 describe('dateUtils', () => {
@@ -15,12 +16,11 @@ describe('dateUtils', () => {
     expect(getTodayDateString(mockNow)).toBe('2026-11-19');
     expect(getSevenDaysAgoDateString(mockNow)).toBe('2026-11-12');
     expect(getCurrentTimeString(mockNow)).toBe('18:00');
-    expect(getDefaultDueTime(mockNow)).toBe('19:00');
+    expect(getDefaultDueTime()).toBe('23:59');
   });
 
-  it('caps default due time at 23:59 if 1 hour later rolls into the next day', () => {
-    const lateNight = new Date('2026-11-19T23:45:00');
-    expect(getDefaultDueTime(lateNight)).toBe('23:59');
+  it('returns 23:59 as default due time at end of day', () => {
+    expect(getDefaultDueTime()).toBe('23:59');
   });
 
   describe('validateChronologicalDeadline', () => {
@@ -197,6 +197,13 @@ describe('dateUtils', () => {
 
       const resPast = validateDeadline('2026-11-18', '10:00', mockNow);
       expect(resPast.isValid).toBe(false);
+    });
+  });
+
+  describe('formatTopBarDate', () => {
+    it('formats a date matching the top bar standard', () => {
+      const date = new Date(2026, 10, 17); // Nov 17 2026
+      expect(formatTopBarDate(date)).toBe('Tuesday, 17 Nov 2026');
     });
   });
 });
