@@ -61,6 +61,7 @@ export interface ChronologicalValidationResult {
   timeError?: string;
   startError?: string;
   generalError?: string;
+  effectiveStartDate?: string;
   effectiveCreatedAt: string;
   effectiveDueDate: string;
   effectiveDueTime: string;
@@ -69,8 +70,8 @@ export interface ChronologicalValidationResult {
 /**
  * Validates chronological integrity of task start time and deadline:
  * 1. Default creation time is Date.now() unless explicitly provided via optional Start Date.
- * 2. Backdating is allowed up to 7 calendar days in the past; earlier dates are blocked.
- * 3. Start date cannot be in the future.
+ * 2. Backdating is allowed up to 7 calendar days in the past (fallback grace period); earlier dates are blocked.
+ * 3. Start date can be in the future (for planning ahead) or up to 7 days in the past.
  * 4. Deadline date must always fall on or after the start date (deadline >= startDate).
  *    - Same-Day Tasks: If start date and deadline date are the same, deadline can be set to any valid time today (or defaults to 11:59 PM if left blank).
  *    - Future dates after start date allow any valid time of day.
@@ -97,17 +98,7 @@ export function validateChronologicalDeadline(
         isValid: false,
         startError: 'Start date cannot be older than 7 days.',
         generalError: 'Start date cannot be older than 7 days. Date is beyond the 7-day logging window.',
-        effectiveCreatedAt,
-        effectiveDueDate: options.dueDate,
-        effectiveDueTime: options.dueTime || '23:59',
-      };
-    }
-
-    if (rawStartDate > todayStr) {
-      return {
-        isValid: false,
-        startError: 'Start date cannot be in the future.',
-        generalError: 'Start date cannot be in the future.',
+        effectiveStartDate: rawStartDate,
         effectiveCreatedAt,
         effectiveDueDate: options.dueDate,
         effectiveDueTime: options.dueTime || '23:59',
@@ -133,6 +124,7 @@ export function validateChronologicalDeadline(
       isValid: false,
       dateError: 'Target due date is required.',
       generalError: 'Please provide a target due date.',
+      effectiveStartDate,
       effectiveCreatedAt,
       effectiveDueDate: '',
       effectiveDueTime: '23:59',
@@ -145,6 +137,7 @@ export function validateChronologicalDeadline(
       isValid: false,
       dateError: 'Date is beyond the 7-day logging window.',
       generalError: 'Date is beyond the 7-day logging window. Deadlines cannot be set earlier than the 7-day window.',
+      effectiveStartDate,
       effectiveCreatedAt,
       effectiveDueDate: rawDueDate,
       effectiveDueTime: '23:59',
@@ -162,6 +155,7 @@ export function validateChronologicalDeadline(
       isValid: false,
       dateError: 'Deadline date must be on or after start date.',
       generalError: 'Deadline date must be on or after start date.',
+      effectiveStartDate,
       effectiveCreatedAt,
       effectiveDueDate,
       effectiveDueTime,
@@ -176,6 +170,7 @@ export function validateChronologicalDeadline(
         isValid: false,
         timeError,
         generalError: 'Deadline must be later than the start time.',
+        effectiveStartDate,
         effectiveCreatedAt,
         effectiveDueDate,
         effectiveDueTime,
@@ -188,6 +183,7 @@ export function validateChronologicalDeadline(
         isValid: false,
         timeError: 'Deadline must be later than the start time.',
         generalError: 'Deadline must be later than the start time.',
+        effectiveStartDate,
         effectiveCreatedAt,
         effectiveDueDate,
         effectiveDueTime,
@@ -197,6 +193,7 @@ export function validateChronologicalDeadline(
 
   return {
     isValid: true,
+    effectiveStartDate,
     effectiveCreatedAt,
     effectiveDueDate,
     effectiveDueTime,

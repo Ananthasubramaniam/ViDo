@@ -395,18 +395,43 @@ describe('Workspace Views and Modals', () => {
       expect(screen.getAllByText(/deadline date must be on or after start date/i).length).toBeGreaterThan(0);
     });
 
-    it('sets min attribute on date inputs to disallow dates older than 7 days ago', () => {
+    it('sets min attribute on date inputs to disallow dates older than 7 days ago and allows future start dates', () => {
       render(<TaskCreateModal isOpen={true} onClose={vi.fn()} />);
 
       const startDateInput = screen.getByLabelText(/start date \(optional\)/i);
       expect(startDateInput).toHaveAttribute('min');
-      expect(startDateInput).toHaveAttribute('max');
       expect(startDateInput.getAttribute('min')).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-      expect(startDateInput.getAttribute('max')).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(startDateInput).not.toHaveAttribute('max');
 
       const dateInput = screen.getByLabelText(/target due date \*/i);
       expect(dateInput).toHaveAttribute('min');
       expect(dateInput.getAttribute('min')).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    });
+
+    it('allows planning future tasks with start date beyond current date', () => {
+      const handleCreate = vi.fn();
+      render(<TaskCreateModal isOpen={true} onClose={vi.fn()} onCreateTask={handleCreate} />);
+
+      const titleInput = screen.getByLabelText(/task title \*/i);
+      fireEvent.change(titleInput, { target: { value: 'Future Planned Task' } });
+
+      const startDateInput = screen.getByLabelText(/start date \(optional\)/i);
+      fireEvent.change(startDateInput, { target: { value: '2026-12-01' } });
+
+      const dueDateInput = screen.getByLabelText(/target due date \*/i);
+      fireEvent.change(dueDateInput, { target: { value: '2026-12-05' } });
+
+      const saveBtn = screen.getByRole('button', { name: /^create task$/i });
+      expect(saveBtn).not.toBeDisabled();
+      fireEvent.click(saveBtn);
+
+      expect(handleCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Future Planned Task',
+          startDate: '2026-12-01',
+          dueDate: '2026-12-05',
+        })
+      );
     });
   });
 

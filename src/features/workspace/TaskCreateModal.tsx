@@ -195,10 +195,9 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
               label="Start Date (Optional)"
               type="date"
               min={sevenDaysAgoStr}
-              max={todayStr}
               value={startDate}
               error={validation.startError}
-              helperText="Leave blank to start now (max 7 days in past)"
+              helperText="Defaults to today if omitted (max 7 days in past)"
               onChange={(e) => setStartDate(e.target.value)}
             />
 

@@ -128,14 +128,25 @@ describe('dateUtils', () => {
         expect(resDue.dateError).toMatch(/7-day logging window/i);
       });
 
-      it('blocks start date in the future', () => {
+      it('allows start date in the future for forward planning', () => {
         const res = validateChronologicalDeadline({
-          startDate: '2026-11-20',
-          dueDate: '2026-11-21',
+          startDate: '2026-11-25',
+          dueDate: '2026-11-28',
+          now: mockNow,
+        });
+        expect(res.isValid).toBe(true);
+        expect(res.effectiveStartDate).toBe('2026-11-25');
+        expect(res.effectiveDueDate).toBe('2026-11-28');
+      });
+
+      it('enforces deadline >= start date even when start date is in the future', () => {
+        const res = validateChronologicalDeadline({
+          startDate: '2026-11-25',
+          dueDate: '2026-11-24', // Earlier than start date
           now: mockNow,
         });
         expect(res.isValid).toBe(false);
-        expect(res.startError).toMatch(/start date cannot be in the future/i);
+        expect(res.dateError).toMatch(/deadline date must be on or after start date/i);
       });
 
       it('enforces deadline date scheduled on or after start date (deadline >= startDate)', () => {
