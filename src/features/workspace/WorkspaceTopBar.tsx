@@ -4,6 +4,7 @@ import { Badge } from '../../components/ui';
 import { NotificationBell } from '../teams/NotificationBell';
 import { getTeamRepository } from '../teams/teamRepository';
 import { TeamInvitation } from '../teams/types';
+import { formatTopBarDate } from '../../utils/dateUtils';
 
 export interface WorkspaceTopBarProps {
   title: string;
@@ -19,6 +20,7 @@ export interface WorkspaceTopBarProps {
   onSignOut?: () => void;
   invitations?: TeamInvitation[];
   onRespondInvitation?: (invitationId: string, accept: boolean) => Promise<void>;
+  currentDate?: string;
 }
 
 export const WorkspaceTopBar: React.FC<WorkspaceTopBarProps> = ({
@@ -31,6 +33,7 @@ export const WorkspaceTopBar: React.FC<WorkspaceTopBarProps> = ({
   onSignOut,
   invitations: propInvitations,
   onRespondInvitation,
+  currentDate: propCurrentDate,
 }) => {
   const userName = isPreview ? 'Demo User' : user?.name || 'Alex Morgan';
   const userInitials = isPreview
@@ -46,6 +49,19 @@ export const WorkspaceTopBar: React.FC<WorkspaceTopBarProps> = ({
     : user?.email || 'alex.morgan@gmail.com';
   const userEmail = isPreview ? 'demo@vido.app' : user?.email || 'alex.morgan@gmail.com';
   const userId = isPreview ? 'demo-user-uid' : user?.id || 'alex-morgan-uid';
+
+  const [displayDate, setDisplayDate] = useState<string>(() => propCurrentDate ?? formatTopBarDate());
+
+  useEffect(() => {
+    if (propCurrentDate) {
+      setDisplayDate(propCurrentDate);
+      return;
+    }
+    const interval = setInterval(() => {
+      setDisplayDate(formatTopBarDate());
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [propCurrentDate]);
 
   const [internalInvitations, setInternalInvitations] = useState<TeamInvitation[]>([]);
 
@@ -149,8 +165,8 @@ export const WorkspaceTopBar: React.FC<WorkspaceTopBarProps> = ({
 
         {/* Date Badge */}
         <div className="hidden lg:block">
-          <Badge variant="neutral" size="sm">
-            Tuesday, 17 Nov 2026
+          <Badge variant="neutral" size="sm" data-testid="topbar-date">
+            {displayDate}
           </Badge>
         </div>
 

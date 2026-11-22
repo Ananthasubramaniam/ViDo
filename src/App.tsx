@@ -3,6 +3,7 @@ import { AuthProvider } from './features/auth';
 import { LandingPage } from './features/landing/LandingPage';
 import { StyleLab } from './features/style-lab/StyleLab';
 import { WorkspaceLayout } from './features/workspace/WorkspaceLayout';
+import { NotFoundView } from './features/workspace/views/NotFoundView';
 import { ErrorBoundary } from './components/ui';
 
 export default function App() {
@@ -16,6 +17,7 @@ export default function App() {
             <Route path="/preview/*" element={<WorkspaceLayout isPreview={true} />} />
             <Route path="/workspace/*" element={<WorkspaceLayout isPreview={false} />} />
             <Route path="/dashboard" element={<Navigate to="/workspace" replace />} />
+            <Route path="*" element={<NotFoundView />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>

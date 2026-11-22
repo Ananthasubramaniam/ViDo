@@ -9,6 +9,7 @@ export interface TaskDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   onToggleTask?: (task: SampleTask) => void;
+  isPreview?: boolean;
 }
 
 export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
@@ -16,6 +17,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   isOpen,
   onClose,
   onToggleTask,
+  isPreview = true,
 }) => {
   const closeBtnRef = useRef<HTMLButtonElement>(null);
 
@@ -40,11 +42,11 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   const isCompleted = task.state === 'completed';
   const isDueToday =
     task.state === 'active' &&
-    (task.dueDate === todayStr || task.dueDate === '2026-11-17') &&
+    (task.dueDate === todayStr || (isPreview && task.dueDate === '2026-11-17')) &&
     (!task.dueTime || task.dueDate !== todayStr || task.dueTime >= currentTimeStr);
   const isOverdue =
     task.state === 'active' &&
-    ((task.dueDate < todayStr && task.dueDate < '2026-11-17') ||
+    ((task.dueDate < todayStr && (!isPreview || task.dueDate < '2026-11-17')) ||
       (task.dueDate === todayStr && !!task.dueTime && task.dueTime < currentTimeStr));
 
   return (

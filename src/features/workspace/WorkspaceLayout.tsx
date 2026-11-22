@@ -15,7 +15,7 @@ import {
   SAMPLE_TASKS,
   type SampleTask,
 } from '../../data/sampleTasks';
-import { getFilteredTasks, getHomeDashboardTasks } from '../../data/taskFilters';
+import { getFilteredTasks, buildHomeDashboard } from '../../data/taskFilters';
 import { getTodayDateString } from '../../utils/dateUtils';
 import { todayISO } from '../../data/calendar';
 import { WorkspaceSidebar } from './WorkspaceSidebar';
@@ -24,6 +24,7 @@ import { HomeView } from './views/HomeView';
 import { ListView } from './views/ListView';
 import { CalendarView } from './views/CalendarView';
 import { AnalyticsView } from './views/AnalyticsView';
+import { NotFoundView } from './views/NotFoundView';
 import { TaskDetailModal } from './TaskDetailModal';
 import { TaskCreateModal } from './TaskCreateModal';
 import { useAuth } from '../auth';
@@ -45,6 +46,39 @@ const TeamSpaceRouteWrapper: React.FC<{
   const { teamId } = useParams<{ teamId: string }>();
   if (!teamId) return null;
   return <TeamSpaceView teamId={teamId} currentUser={currentUser} basePath={basePath} />;
+};
+
+export const isKnownWorkspacePath = (pathname: string, basePath: string): boolean => {
+  // Normalize pathname and basePath: collapse consecutive slashes and strip trailing slashes (except root)
+  const normalized = pathname.replace(/\/+/g, '/').replace(/\/$/, '') || '/';
+  const normalizedBase = basePath.replace(/\/+/g, '/').replace(/\/$/, '') || '/';
+
+  if (normalized === normalizedBase) return true;
+  if (!normalized.startsWith(`${normalizedBase}/`)) return false;
+
+  const subPath = normalized.slice(normalizedBase.length + 1);
+
+  const exactKnownSubPaths = new Set([
+    'dashboard',
+    'tasks',
+    'today',
+    'upcoming',
+    'needs-attention',
+    'completed',
+    'archived',
+    'calendar',
+    'analytics',
+  ]);
+
+  if (exactKnownSubPaths.has(subPath)) return true;
+
+  // team/:teamId only - exactly one segment after team/, with no further sub-paths
+  if (subPath.startsWith('team/')) {
+    const teamParts = subPath.split('/');
+    return teamParts.length === 2 && Boolean(teamParts[1]);
+  }
+
+  return false;
 };
 
 export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
@@ -159,35 +193,14 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   const benchmarkDateStr = isPreview ? BENCHMARK_DATE_STR : todayStr;
   const benchmarkDateTime = isPreview ? BENCHMARK_DATE_TIME : new Date().toISOString();
 
-  const baseViews = useMemo(
-    () => getFilteredTasks(tasks, benchmarkDateStr, benchmarkDateTime),
-    [tasks, benchmarkDateStr, benchmarkDateTime]
+  const views = useMemo(
+    () => getFilteredTasks(tasks, benchmarkDateStr, benchmarkDateTime, todayStr),
+    [tasks, benchmarkDateStr, benchmarkDateTime, todayStr]
   );
 
-  const views = useMemo(() => {
-    if (!isPreview || todayStr === BENCHMARK_DATE_STR) {
-      return baseViews;
-    }
-    const extraTodayTasks = tasks.filter(
-      (t) =>
-        t.state === 'active' &&
-        !t.isArchived &&
-        t.dueDate === todayStr &&
-        !baseViews.today.some((bt) => bt.id === t.id)
-    );
-    if (extraTodayTasks.length === 0) {
-      return baseViews;
-    }
-    return {
-      ...baseViews,
-      today: [...extraTodayTasks, ...baseViews.today],
-      upcoming: baseViews.upcoming.filter((t) => t.dueDate !== todayStr),
-    };
-  }, [baseViews, isPreview, tasks, todayStr]);
-
   const dashboard = useMemo(
-    () => getHomeDashboardTasks(tasks, benchmarkDateStr, benchmarkDateTime),
-    [tasks, benchmarkDateStr, benchmarkDateTime]
+    () => buildHomeDashboard(views),
+    [views]
   );
   const syncError = calendar.error ?? planningTargets.error;
 
@@ -201,6 +214,12 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         </div>
       </div>
     );
+  }
+
+  // If the path is not a recognized workspace route, render the standalone not-found view directly
+  // without the sidebar or top bar chrome.
+  if (!isKnownWorkspacePath(location.pathname, basePath)) {
+    return <NotFoundView isPreview={isPreview} />;
   }
 
   if (!isPreview && !authUser) {
@@ -277,19 +296,24 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
       };
     }
     if (path.endsWith('/today')) {
-      return { title: 'Today', subtitle: 'Responsibilities due on 17 November 2026' };
+      return {
+        title: 'Tasks',
+        subtitle: isPreview
+          ? "Today's responsibilities due on 17 November 2026"
+          : "Today's responsibilities and daily workload",
+      };
     }
     if (path.endsWith('/upcoming')) {
-      return { title: 'Upcoming', subtitle: 'Scheduled responsibilities for future dates' };
+      return { title: 'Tasks', subtitle: 'Scheduled responsibilities for future dates' };
     }
     if (path.endsWith('/needs-attention')) {
-      return { title: 'Needs Attention', subtitle: 'Overdue or urgent items requiring action' };
+      return { title: 'Tasks', subtitle: 'Overdue or urgent items requiring action' };
     }
     if (path.endsWith('/completed')) {
-      return { title: 'Completed', subtitle: 'All finished work with completion timings' };
+      return { title: 'Tasks', subtitle: 'All finished work with completion timings' };
     }
     if (path.endsWith('/archived')) {
-      return { title: 'Archived', subtitle: 'Shelved and preserved task history' };
+      return { title: 'Tasks', subtitle: 'Shelved and preserved task history' };
     }
     if (path.endsWith('/calendar')) {
       return {
@@ -447,10 +471,6 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                 }
               />
               <Route
-                path="team/:teamId/*"
-                element={<TeamSpaceRouteWrapper currentUser={user} basePath={basePath} />}
-              />
-              <Route
                 path="team/:teamId"
                 element={<TeamSpaceRouteWrapper currentUser={user} basePath={basePath} />}
               />
@@ -459,10 +479,15 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                 element={
                   <ListView
                     title="Today's Work"
-                    description="Tasks targeted for completion by end of day 17 November 2026."
+                    description={
+                      isPreview
+                        ? 'Tasks targeted for completion by end of day 17 November 2026.'
+                        : 'Tasks targeted for completion by end of day today.'
+                    }
                     tasks={views.today}
                     onTaskClick={handleTaskClick}
                     onNewTaskClick={() => setIsCreateOpen(true)}
+                    isPreview={isPreview}
                   />
                 }
               />
@@ -475,6 +500,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                     tasks={views.upcoming}
                     onTaskClick={handleTaskClick}
                     onNewTaskClick={() => setIsCreateOpen(true)}
+                    isPreview={isPreview}
                   />
                 }
               />
@@ -487,6 +513,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                     tasks={views.needsAttention}
                     onTaskClick={handleTaskClick}
                     onNewTaskClick={() => setIsCreateOpen(true)}
+                    isPreview={isPreview}
                   />
                 }
               />
@@ -498,6 +525,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                     description="Full historical record of delivered responsibilities."
                     tasks={views.completed}
                     onTaskClick={handleTaskClick}
+                    isPreview={isPreview}
                   />
                 }
               />
@@ -509,6 +537,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                     description="Shelved tasks preserved with their complete checkpoint history."
                     tasks={views.archived}
                     onTaskClick={handleTaskClick}
+                    isPreview={isPreview}
                   />
                 }
               />
@@ -545,6 +574,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                   />
                 }
               />
+              <Route path="*" element={<Navigate to={basePath} replace />} />
             </Routes>
           </main>
         </div>
@@ -559,6 +589,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
           setSelectedTask(null);
         }}
         onToggleTask={handleToggleTask}
+        isPreview={isPreview}
       />
 
       <TaskCreateModal

@@ -8,19 +8,25 @@ export interface TaskRowProps {
   task: SampleTask;
   onClick: (task: SampleTask) => void;
   onToggle?: (task: SampleTask) => void;
+  isPreview?: boolean;
 }
 
-export const TaskRow: React.FC<TaskRowProps> = ({ task, onClick, onToggle }) => {
+export const TaskRow: React.FC<TaskRowProps> = ({
+  task,
+  onClick,
+  onToggle,
+  isPreview = true,
+}) => {
   const todayStr = getTodayDateString();
   const currentTimeStr = getCurrentTimeString();
   const isCompleted = task.state === 'completed';
   const isDueToday =
     task.state === 'active' &&
-    (task.dueDate === todayStr || task.dueDate === '2026-11-17') &&
+    (task.dueDate === todayStr || (isPreview && task.dueDate === '2026-11-17')) &&
     (!task.dueTime || task.dueDate !== todayStr || task.dueTime >= currentTimeStr);
   const isOverdue =
     task.state === 'active' &&
-    ((task.dueDate < todayStr && task.dueDate < '2026-11-17') ||
+    ((task.dueDate < todayStr && (!isPreview || task.dueDate < '2026-11-17')) ||
       (task.dueDate === todayStr && !!task.dueTime && task.dueTime < currentTimeStr));
 
   return (

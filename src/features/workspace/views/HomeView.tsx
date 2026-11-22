@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SampleTask, SAMPLE_TASKS } from '../../../data/sampleTasks';
-import { getHomeDashboardTasks, HomeDashboardTasks } from '../../../data/taskFilters';
-import { getTodayDateString } from '../../../utils/dateUtils';
+import {
+  getHomeDashboardTasks,
+  HomeDashboardTasks,
+} from '../../../data/taskFilters';
+import { BENCHMARK_DATE_STR } from '../../../data/sampleTasks';
+import { getTodayDateString, formatTopBarDate } from '../../../utils/dateUtils';
 import { TaskRow } from '../TaskRow';
 import { Button } from '../../../components/ui';
 import {
@@ -52,7 +56,15 @@ export const HomeView: React.FC<HomeViewProps> = ({
 }) => {
   const navigate = useNavigate();
   const allTasks = tasks ?? SAMPLE_TASKS;
-  const currentDashboard = dashboard ?? getHomeDashboardTasks(allTasks);
+  const todayStr = getTodayDateString();
+  const currentDashboard =
+    dashboard ??
+    getHomeDashboardTasks(
+      allTasks,
+      isPreview ? BENCHMARK_DATE_STR : todayStr,
+      undefined,
+      todayStr
+    );
 
   const [activeTab, setActiveTab] = useState<'dashboard' | 'tasks'>(initialTab);
   const [dashboardCategory, setDashboardCategory] = useState<
@@ -95,12 +107,16 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
     // 1. Status Filter
     const todayStr = getTodayDateString();
+    const referenceDate = isPreview ? BENCHMARK_DATE_STR : todayStr;
     if (statusFilter === 'today') {
-      if (task.dueDate !== '2026-11-17' && task.dueDate !== todayStr) return false;
+      const isDueToday = task.dueDate === referenceDate || (isPreview && task.dueDate === todayStr);
+      if (!isDueToday) return false;
     } else if (statusFilter === 'needsAttention') {
-      if (task.dueDate >= '2026-11-17' && task.dueDate >= todayStr) return false;
+      const isOverdue = task.dueDate < referenceDate && (!isPreview || task.dueDate !== todayStr);
+      if (!isOverdue) return false;
     } else if (statusFilter === 'upcoming') {
-      if (task.dueDate <= '2026-11-17' || task.dueDate <= todayStr) return false;
+      const isUpcoming = task.dueDate > referenceDate && (!isPreview || task.dueDate !== todayStr);
+      if (!isUpcoming) return false;
     }
 
     // 2. Category Filter
@@ -120,7 +136,9 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const dashboardCategories = {
     today: {
       title: "Today's Agenda",
-      subtitle: 'Tasks scheduled for today, 17 November 2026',
+      subtitle: isPreview
+        ? 'Tasks scheduled for today, 17 November 2026'
+        : `Tasks scheduled for today, ${formatTopBarDate()}`,
       items: currentDashboard.today.items,
       count: currentDashboard.today.totalCount,
       emptyText: 'No tasks due today. You are fully caught up.',
@@ -169,7 +187,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   <div className="flex items-center gap-2 mb-1.5">
                     <span className="text-[11px] font-mono tracking-wider uppercase font-semibold text-gray-400 flex items-center gap-1.5">
                       <Sparkles className="w-3.5 h-3.5 text-[var(--accent)]" />
-                      Tuesday, 17 November 2026
+                      {isPreview ? 'Tuesday, 17 November 2026' : formatTopBarDate()}
                     </span>
                     {isPreview ? (
                       <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-400 text-amber-950 shadow-xs">
@@ -372,6 +390,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                     task={task}
                     onClick={onTaskClick}
                     onToggle={onToggleTask}
+                    isPreview={isPreview}
                   />
                 ))}
               </div>
@@ -620,6 +639,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                     task={task}
                     onClick={onTaskClick}
                     onToggle={onToggleTask}
+                    isPreview={isPreview}
                   />
                 ))}
               </div>

@@ -7,7 +7,7 @@ import { HomeView } from './views/HomeView';
 import { ListView } from './views/ListView';
 import { TaskDetailModal } from './TaskDetailModal';
 import { TaskCreateModal } from './TaskCreateModal';
-import { WorkspaceLayout } from './WorkspaceLayout';
+import { WorkspaceLayout, isKnownWorkspacePath } from './WorkspaceLayout';
 
 describe('Workspace Views and Modals', () => {
   describe('HomeView Command Center and Interactive Switching', () => {
@@ -213,7 +213,20 @@ describe('Workspace Views and Modals', () => {
       // Check that createdAt is an ISO timestamp close to Date.now()
       const createdCall = handleCreate.mock.calls[0][0];
       expect(new Date(createdCall.createdAt).getTime()).toBeGreaterThan(0);
+      expect(createdCall.dueTime).toBe('23:59');
       expect(handleClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('initializes default due time to 23:59 in the modal form', () => {
+      render(
+        <TaskCreateModal
+          isOpen={true}
+          onClose={vi.fn()}
+        />
+      );
+
+      const dueTimeInput = screen.getByLabelText(/due time \(optional\)/i);
+      expect(dueTimeInput).toHaveValue('23:59');
     });
 
     it('defaults deadline time to 23:59 when time is left blank', () => {
@@ -445,8 +458,9 @@ describe('Workspace Views and Modals', () => {
         </MemoryRouter>
       );
 
-      // Header indicates Today view
-      expect(screen.getByRole('heading', { name: /^today$/i })).toBeInTheDocument();
+      // Header indicates Tasks view
+      expect(screen.getByRole('heading', { name: /^tasks$/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /today's work/i })).toBeInTheDocument();
 
       // Verify persistent demo preview banner and single unmissable back button
       expect(screen.getByText('DEMO PREVIEW')).toBeInTheDocument();
@@ -455,7 +469,7 @@ describe('Workspace Views and Modals', () => {
 
       // Sidebar two primary tabs exist: Dashboard and Tasks
       expect(screen.getByRole('link', { name: /dashboard/i })).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: /tasks/i })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /^tasks/i })).toBeInTheDocument();
     });
 
     it('navigates between Dashboard and Tasks via sidebar without in-page dual navigation', () => {
@@ -472,7 +486,7 @@ describe('Workspace Views and Modals', () => {
       expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
 
       // Click Tasks in sidebar
-      const tasksLink = screen.getByRole('link', { name: /tasks/i });
+      const tasksLink = screen.getByRole('link', { name: /^tasks/i });
       fireEvent.click(tasksLink);
 
       // Now on Tasks view: Filter builder is visible, in-page tablist is NOT present
@@ -497,8 +511,8 @@ describe('Workspace Views and Modals', () => {
         </MemoryRouter>
       );
 
-      // Open modal via sidebar New Task button
-      const newTaskBtn = screen.getByRole('button', { name: /new task/i });
+      // Open modal via New Task button
+      const newTaskBtn = screen.getAllByRole('button', { name: /new task/i })[0];
       fireEvent.click(newTaskBtn);
 
       expect(screen.getByRole('heading', { name: /create new task/i })).toBeInTheDocument();
@@ -519,6 +533,44 @@ describe('Workspace Views and Modals', () => {
       expect(screen.getByText(/task "buy groceries for dinner" added/i)).toBeInTheDocument();
     });
 
+    it('creates a task with default date and displays it under Today Agenda on Dashboard, not Upcoming', () => {
+      render(
+        <MemoryRouter initialEntries={['/preview']}>
+          <Routes>
+            <Route path="/preview/*" element={<WorkspaceLayout />} />
+          </Routes>
+        </MemoryRouter>
+      );
+
+      // Verify on dashboard
+      expect(screen.getByRole('heading', { name: /today's agenda/i })).toBeInTheDocument();
+
+      // Open modal via New Task button
+      const newTaskBtn = screen.getAllByRole('button', { name: /new task/i })[0];
+      fireEvent.click(newTaskBtn);
+
+      // Enter task title
+      const titleInput = screen.getByLabelText(/task title \*/i);
+      fireEvent.change(titleInput, { target: { value: 'Launch Critical Project Today' } });
+
+      // Save task
+      const saveBtn = screen.getByRole('button', { name: /^create task$/i });
+      fireEvent.click(saveBtn);
+
+      // Ensure modal is closed
+      expect(screen.queryByRole('heading', { name: /create new task/i })).not.toBeInTheDocument();
+
+      // Verify task is in Today's Agenda on the Dashboard
+      expect(screen.getByText('Launch Critical Project Today')).toBeInTheDocument();
+
+      // Switch to Upcoming tile
+      const upcomingTile = screen.getByRole('button', { name: /view upcoming tasks/i });
+      fireEvent.click(upcomingTile);
+
+      // Verify task is NOT in Upcoming Schedule
+      expect(screen.queryByText('Launch Critical Project Today')).not.toBeInTheDocument();
+    });
+
     it('renders team space view when navigating to /preview/team/:teamId', async () => {
       render(
         <MemoryRouter initialEntries={['/preview/team/team-alpha-launch']}>
@@ -532,6 +584,69 @@ describe('Workspace Views and Modals', () => {
       await screen.findByRole('heading', { level: 2, name: /alpha launch/i });
       expect(screen.getByText(/phased milestone roadmap/i)).toBeInTheDocument();
       expect(screen.getByText(/team tasks & deliverables/i)).toBeInTheDocument();
+    });
+
+    it('renders standalone not-found view without sidebar or topbar on unmapped workspace subroutes', () => {
+      render(
+        <MemoryRouter initialEntries={['/preview/unmapped-subroute-path']}>
+          <Routes>
+            <Route path="/preview/*" element={<WorkspaceLayout />} />
+          </Routes>
+        </MemoryRouter>
+      );
+
+      // Verify not found view elements
+      expect(
+        screen.getByRole('heading', { name: /you've wandered off the scheduled horizon/i })
+      ).toBeInTheDocument();
+      expect(screen.getByTestId('animated-character')).toBeInTheDocument();
+
+      // Verify workspace chrome (sidebar and top bar) is NOT rendered
+      expect(screen.queryByRole('navigation', { name: /workspace navigation/i })).not.toBeInTheDocument();
+      expect(screen.queryByText('DEMO PREVIEW')).not.toBeInTheDocument();
+    });
+
+    it('renders standalone not-found view on nested sub-endpoints under tasks or other sections', () => {
+      render(
+        <MemoryRouter initialEntries={['/preview/tasks/invalid-sub-endpoint']}>
+          <Routes>
+            <Route path="/preview/*" element={<WorkspaceLayout />} />
+          </Routes>
+        </MemoryRouter>
+      );
+
+      expect(
+        screen.getByRole('heading', { name: /you've wandered off the scheduled horizon/i })
+      ).toBeInTheDocument();
+      expect(screen.getByTestId('animated-character')).toBeInTheDocument();
+      expect(screen.queryByRole('navigation', { name: /workspace navigation/i })).not.toBeInTheDocument();
+      expect(screen.queryByText('DEMO PREVIEW')).not.toBeInTheDocument();
+    });
+
+    it('isKnownWorkspacePath helper correctly classifies valid and invalid paths regardless of sub-endpoints', () => {
+      // Valid known paths
+      expect(isKnownWorkspacePath('/workspace', '/workspace')).toBe(true);
+      expect(isKnownWorkspacePath('/workspace/', '/workspace')).toBe(true);
+      expect(isKnownWorkspacePath('/workspace/dashboard', '/workspace')).toBe(true);
+      expect(isKnownWorkspacePath('/workspace/tasks', '/workspace')).toBe(true);
+      expect(isKnownWorkspacePath('/workspace/today', '/workspace')).toBe(true);
+      expect(isKnownWorkspacePath('/workspace/upcoming', '/workspace')).toBe(true);
+      expect(isKnownWorkspacePath('/workspace/needs-attention', '/workspace')).toBe(true);
+      expect(isKnownWorkspacePath('/workspace/completed', '/workspace')).toBe(true);
+      expect(isKnownWorkspacePath('/workspace/archived', '/workspace')).toBe(true);
+      expect(isKnownWorkspacePath('/workspace/calendar', '/workspace')).toBe(true);
+      expect(isKnownWorkspacePath('/workspace/analytics', '/workspace')).toBe(true);
+      expect(isKnownWorkspacePath('/workspace/team/alpha-1', '/workspace')).toBe(true);
+
+      // Invalid sub-endpoints (MUST be rejected and return false)
+      expect(isKnownWorkspacePath('/workspace/tasks/today', '/workspace')).toBe(false);
+      expect(isKnownWorkspacePath('/workspace/tasks/any-sub-path', '/workspace')).toBe(false);
+      expect(isKnownWorkspacePath('/workspace/today/extra', '/workspace')).toBe(false);
+      expect(isKnownWorkspacePath('/workspace/calendar/month', '/workspace')).toBe(false);
+      expect(isKnownWorkspacePath('/workspace/team', '/workspace')).toBe(false);
+      expect(isKnownWorkspacePath('/workspace/team/', '/workspace')).toBe(false);
+      expect(isKnownWorkspacePath('/workspace/team/alpha-1/extra', '/workspace')).toBe(false);
+      expect(isKnownWorkspacePath('/workspace/random-wrong-endpoint', '/workspace')).toBe(false);
     });
   });
 });

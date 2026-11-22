@@ -33,17 +33,11 @@ export function getCurrentTimeString(d: Date = new Date()): string {
 }
 
 /**
- * Returns a sensible default future due time for today.
- * Defaults to 1 hour from now, capped at 23:59 for today.
+ * Returns default future due time for a task deadline.
+ * Defaults to 23:59 (end of the selected day).
  */
-export function getDefaultDueTime(d: Date = new Date()): string {
-  const target = new Date(d.getTime() + 60 * 60 * 1000);
-  if (target.getDate() !== d.getDate()) {
-    return '23:59';
-  }
-  const hours = String(target.getHours()).padStart(2, '0');
-  const minutes = String(target.getMinutes()).padStart(2, '0');
-  return `${hours}:${minutes}`;
+export function getDefaultDueTime(): string {
+  return '23:59';
 }
 
 export interface ChronologicalValidationOptions {
@@ -214,4 +208,15 @@ export function validateDeadline(
     isBackdated: false,
     now,
   });
+}
+
+/**
+ * Formats a date for the top bar badge, e.g. "Tuesday, 17 Nov 2026" or "Sunday, 22 Nov 2026"
+ */
+export function formatTopBarDate(d: Date = new Date()): string {
+  const weekday = d.toLocaleDateString('en-US', { weekday: 'long' });
+  const day = d.getDate();
+  const month = d.toLocaleDateString('en-US', { month: 'short' });
+  const year = d.getFullYear();
+  return `${weekday}, ${day} ${month} ${year}`;
 }

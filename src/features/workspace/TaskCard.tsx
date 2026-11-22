@@ -7,19 +7,20 @@ import { getTodayDateString, getCurrentTimeString } from '../../utils/dateUtils'
 export interface TaskCardProps {
   task: SampleTask;
   onClick: (task: SampleTask) => void;
+  isPreview?: boolean;
 }
 
-export const TaskCard: React.FC<TaskCardProps> = ({ task, onClick }) => {
+export const TaskCard: React.FC<TaskCardProps> = ({ task, onClick, isPreview = true }) => {
   const todayStr = getTodayDateString();
   const currentTimeStr = getCurrentTimeString();
   const isCompleted = task.state === 'completed';
   const isDueToday =
     task.state === 'active' &&
-    (task.dueDate === todayStr || task.dueDate === '2026-11-17') &&
+    (task.dueDate === todayStr || (isPreview && task.dueDate === '2026-11-17')) &&
     (!task.dueTime || task.dueDate !== todayStr || task.dueTime >= currentTimeStr);
   const isOverdue =
     task.state === 'active' &&
-    ((task.dueDate < todayStr && task.dueDate < '2026-11-17') ||
+    ((task.dueDate < todayStr && (!isPreview || task.dueDate < '2026-11-17')) ||
       (task.dueDate === todayStr && !!task.dueTime && task.dueTime < currentTimeStr));
 
   return (
