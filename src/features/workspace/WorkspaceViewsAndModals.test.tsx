@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { SAMPLE_TASKS } from '../../data/sampleTasks';
 import { getHomeDashboardTasks } from '../../data/taskFilters';
+import { getTodayDateString } from '../../data/dateValidation';
 import { HomeView } from './views/HomeView';
 import { ListView } from './views/ListView';
 import { TaskDetailModal } from './TaskDetailModal';
@@ -209,6 +210,37 @@ describe('Workspace Views and Modals', () => {
         })
       );
       expect(handleClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('rejects a due date in the past', () => {
+      const handleClose = vi.fn();
+      const handleCreate = vi.fn();
+      const today = getTodayDateString();
+      const yesterday = getTodayDateString(
+        new Date(Date.now() - 24 * 60 * 60 * 1000)
+      );
+
+      render(
+        <TaskCreateModal
+          isOpen={true}
+          onClose={handleClose}
+          onCreateTask={handleCreate}
+        />
+      );
+
+      const dateInput = screen.getByLabelText(/target due date \*/i);
+      expect(dateInput).toHaveAttribute('min', today);
+      expect(dateInput).toHaveValue(today);
+
+      fireEvent.change(screen.getByLabelText(/task title \*/i), {
+        target: { value: 'Task With Old Date' },
+      });
+      fireEvent.change(dateInput, { target: { value: yesterday } });
+      fireEvent.click(screen.getByRole('button', { name: /save task/i }));
+
+      expect(handleCreate).not.toHaveBeenCalled();
+      expect(handleClose).not.toHaveBeenCalled();
+      expect(screen.getByText(/due date cannot be in the past/i)).toBeInTheDocument();
     });
   });
 

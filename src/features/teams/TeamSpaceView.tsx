@@ -15,6 +15,7 @@ import { TeamTaskRow } from './TeamTaskRow';
 import { TeamTaskCreateModal } from './TeamTaskCreateModal';
 import { InviteMemberModal } from './InviteMemberModal';
 import { Button } from '../../components/ui';
+import { BENCHMARK_DATE_STR } from '../../data/sampleTasks';
 
 export interface TeamSpaceViewProps {
   teamId: string;
@@ -25,6 +26,7 @@ export interface TeamSpaceViewProps {
 export const TeamSpaceView: React.FC<TeamSpaceViewProps> = ({
   teamId,
   currentUser,
+  basePath,
 }) => {
   const [team, setTeam] = useState<Team | null>(null);
   const [milestones, setMilestones] = useState<TeamMilestone[]>([]);
@@ -310,6 +312,7 @@ export const TeamSpaceView: React.FC<TeamSpaceViewProps> = ({
             members={team.members}
             milestones={milestones}
             onTaskCreated={handleTaskCreated}
+            today={basePath === '/preview' ? BENCHMARK_DATE_STR : undefined}
           />
         </>
       )}

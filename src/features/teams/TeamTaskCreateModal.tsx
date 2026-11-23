@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, CheckSquare, Plus, AlertCircle } from 'lucide-react';
 import { getTeamRepository } from './teamRepository';
 import { TeamMember, TeamMilestone, TeamTask, TeamTaskPriority } from './types';
+import { getTodayDateString, isPastDate } from '../../data/dateValidation';
 import { Button } from '../../components/ui';
 
 export interface TeamTaskCreateModalProps {
@@ -12,6 +13,8 @@ export interface TeamTaskCreateModalProps {
   members: TeamMember[];
   milestones: TeamMilestone[];
   onTaskCreated?: (task: TeamTask) => void;
+  /** Reference date for "today". Defaults to the real current date. */
+  today?: string;
 }
 
 export const TeamTaskCreateModal: React.FC<TeamTaskCreateModalProps> = ({
@@ -22,10 +25,12 @@ export const TeamTaskCreateModal: React.FC<TeamTaskCreateModalProps> = ({
   members,
   milestones,
   onTaskCreated,
+  today,
 }) => {
+  const [minDate] = useState(() => today ?? getTodayDateString());
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [deadline, setDeadline] = useState('2026-11-25');
+  const [deadline, setDeadline] = useState(minDate);
   const [priority, setPriority] = useState<TeamTaskPriority>('medium');
   const [milestoneId, setMilestoneId] = useState<string>('');
   const [assigneeId, setAssigneeId] = useState<string>('');
@@ -44,6 +49,10 @@ export const TeamTaskCreateModal: React.FC<TeamTaskCreateModalProps> = ({
     }
     if (!deadline) {
       setError('Please specify a delivery deadline');
+      return;
+    }
+    if (isPastDate(deadline, minDate)) {
+      setError('Deadline cannot be in the past. Choose today or a future date.');
       return;
     }
 
@@ -71,6 +80,7 @@ export const TeamTaskCreateModal: React.FC<TeamTaskCreateModalProps> = ({
 
       setTitle('');
       setDescription('');
+      setDeadline(minDate);
       setMilestoneId('');
       setAssigneeId('');
       if (onTaskCreated) onTaskCreated(created);
@@ -157,8 +167,13 @@ export const TeamTaskCreateModal: React.FC<TeamTaskCreateModalProps> = ({
               <input
                 id="task-deadline"
                 type="date"
+                min={minDate}
+                aria-invalid={!!error}
                 value={deadline}
-                onChange={(e) => setDeadline(e.target.value)}
+                onChange={(e) => {
+                  setDeadline(e.target.value);
+                  if (error) setError(null);
+                }}
                 className="w-full px-3.5 py-2 bg-[var(--canvas)] border border-[var(--line)] rounded-xl text-xs text-[var(--ink)] focus:outline-hidden focus:ring-2 focus:ring-[var(--accent)]/30"
               />
             </div>

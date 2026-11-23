@@ -4,6 +4,7 @@ import { TeamTaskCreateModal } from './TeamTaskCreateModal';
 import { setTeamRepository } from './teamRepository';
 import { MockTeamRepository } from './MockTeamRepository';
 import { TeamMember, TeamMilestone } from './types';
+import { getTodayDateString } from '../../data/dateValidation';
 
 describe('TeamTaskCreateModal', () => {
   let mockRepo: MockTeamRepository;
@@ -117,5 +118,42 @@ describe('TeamTaskCreateModal', () => {
       );
       expect(handleClose).toHaveBeenCalledTimes(1);
     });
+  });
+
+  it('rejects a deadline in the past', async () => {
+    const handleCreated = vi.fn();
+    const handleClose = vi.fn();
+    const today = getTodayDateString();
+    const yesterday = getTodayDateString(
+      new Date(Date.now() - 24 * 60 * 60 * 1000)
+    );
+
+    render(
+      <TeamTaskCreateModal
+        isOpen={true}
+        onClose={handleClose}
+        teamId="team-1"
+        leadId="user-lead"
+        members={mockMembers}
+        milestones={mockMilestones}
+        onTaskCreated={handleCreated}
+      />
+    );
+
+    const deadlineInput = screen.getByLabelText(/target deadline/i);
+    expect(deadlineInput).toHaveAttribute('min', today);
+    expect(deadlineInput).toHaveValue(today);
+
+    fireEvent.change(screen.getByLabelText(/task title/i), {
+      target: { value: 'Old Deadline Task' },
+    });
+    fireEvent.change(deadlineInput, { target: { value: yesterday } });
+    fireEvent.click(screen.getByRole('button', { name: /create task/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/deadline cannot be in the past/i)).toBeInTheDocument();
+    });
+    expect(handleCreated).not.toHaveBeenCalled();
+    expect(handleClose).not.toHaveBeenCalled();
   });
 });

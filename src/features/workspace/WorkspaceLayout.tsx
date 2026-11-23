@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useLocation, useNavigate, Link, Navigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { SAMPLE_TASKS, SampleTask } from '../../data/sampleTasks';
+import { BENCHMARK_DATE_STR, SAMPLE_TASKS, SampleTask } from '../../data/sampleTasks';
 import { getFilteredTasks, getHomeDashboardTasks } from '../../data/taskFilters';
 import { WorkspaceSidebar } from './WorkspaceSidebar';
 import { WorkspaceTopBar } from './WorkspaceTopBar';
@@ -440,6 +440,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
         onCreateTask={handleCreateTask}
+        today={isPreview ? BENCHMARK_DATE_STR : undefined}
       />
 
       <CreateTeamModal

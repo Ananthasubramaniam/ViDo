@@ -1,22 +1,28 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button, Input } from '../../components/ui';
 import { SampleTask } from '../../data/sampleTasks';
+import { getTodayDateString, isPastDate } from '../../data/dateValidation';
 import { X, Tag, CheckCircle2 } from 'lucide-react';
 
 export interface TaskCreateModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCreateTask?: (task: SampleTask) => void;
+  /** Reference date for "today". Defaults to the real current date. */
+  today?: string;
 }
 
 export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
   isOpen,
   onClose,
   onCreateTask,
+  today,
 }) => {
+  const [minDate] = useState(() => today ?? getTodayDateString());
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [dueDate, setDueDate] = useState('2026-11-17');
+  const [dueDate, setDueDate] = useState(minDate);
+  const [dateError, setDateError] = useState<string | null>(null);
   const [dueTime, setDueTime] = useState('17:00');
   const [priority, setPriority] = useState<'high' | 'medium' | 'low' | ''>('medium');
   const [category, setCategory] = useState<'personal' | 'home' | 'work'>('personal');
@@ -44,6 +50,12 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
     e.preventDefault();
     if (!title.trim()) return;
 
+    if (isPastDate(dueDate, minDate)) {
+      setDateError('Due date cannot be in the past. Choose today or a future date.');
+      return;
+    }
+    setDateError(null);
+
     const newTask: SampleTask = {
       id: `task-${Date.now()}`,
       title: title.trim(),
@@ -69,7 +81,8 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
     // Reset inputs
     setTitle('');
     setDescription('');
-    setDueDate('2026-11-17');
+    setDueDate(minDate);
+    setDateError(null);
     setDueTime('17:00');
     setPriority('medium');
     setCategory('personal');
@@ -142,8 +155,14 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
               label="Target Due Date *"
               type="date"
               required
+              min={minDate}
+              error={dateError || undefined}
+              aria-invalid={!!dateError}
               value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
+              onChange={(e) => {
+                setDueDate(e.target.value);
+                if (dateError) setDateError(null);
+              }}
             />
 
             <Input
