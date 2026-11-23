@@ -242,6 +242,59 @@ describe('Workspace Views and Modals', () => {
       expect(handleClose).not.toHaveBeenCalled();
       expect(screen.getByText(/due date cannot be in the past/i)).toBeInTheDocument();
     });
+
+    it('rejects a time earlier today instead of rolling it over', () => {
+      const handleClose = vi.fn();
+      const handleCreate = vi.fn();
+      const now = new Date(2026, 10, 23, 11, 30, 0);
+
+      render(
+        <TaskCreateModal
+          isOpen={true}
+          onClose={handleClose}
+          onCreateTask={handleCreate}
+          today={getTodayDateString(now)}
+          now={now}
+        />
+      );
+
+      fireEvent.change(screen.getByLabelText(/task title \*/i), {
+        target: { value: 'Task With Earlier Time' },
+      });
+      fireEvent.change(screen.getByLabelText(/due time/i), {
+        target: { value: '11:29' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: /save task/i }));
+
+      expect(screen.getByText(/due time cannot be in the past/i)).toBeInTheDocument();
+      expect(handleCreate).not.toHaveBeenCalled();
+      expect(handleClose).not.toHaveBeenCalled();
+    });
+
+    it('rejects the default end-of-day deadline when it is already past', () => {
+      const handleCreate = vi.fn();
+      const handleClose = vi.fn();
+      const now = new Date(2026, 10, 23, 23, 59, 30);
+
+      render(
+        <TaskCreateModal
+          isOpen={true}
+          onClose={handleClose}
+          onCreateTask={handleCreate}
+          today={getTodayDateString(now)}
+          now={now}
+        />
+      );
+
+      fireEvent.change(screen.getByLabelText(/task title \*/i), {
+        target: { value: 'Late Default Deadline Task' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: /save task/i }));
+
+      expect(screen.getByText(/due time cannot be in the past/i)).toBeInTheDocument();
+      expect(handleCreate).not.toHaveBeenCalled();
+      expect(handleClose).not.toHaveBeenCalled();
+    });
   });
 
   describe('WorkspaceLayout Integration', () => {

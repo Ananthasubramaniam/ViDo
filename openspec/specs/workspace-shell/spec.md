@@ -49,6 +49,17 @@ The workspace shell SHALL provide a centered modal dialog demonstrating the task
 - **WHEN** the user clicks the "New Task" button or triggers the shortcut
 - **THEN** the system opens an accessible centered modal with visible focus trapped inside, and dismisses it when Escape or Cancel is triggered.
 
+### Requirement: Strict past-deadline validation
+The system SHALL prevent task creation when a deadline is in the past. A past calendar date SHALL be rejected, and a time earlier than the current time on the current date SHALL be rejected. The system SHALL NOT automatically roll past-today times over to a future date.
+
+#### Scenario: Entering a past calendar date
+- **WHEN** the user enters any date before today
+- **THEN** the system rejects the deadline and does not create the task.
+
+#### Scenario: Entering an earlier time today
+- **WHEN** the user enters today's date and a time earlier than the current time
+- **THEN** the system rejects the deadline, shows a validation error, and does not create the task.
+
 ### Requirement: Task detail concept modal
 The workspace shell SHALL provide a centered modal dialog displaying comprehensive task information including title, description, deadline, priority, and timestamps.
 

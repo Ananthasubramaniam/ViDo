@@ -140,14 +140,15 @@ describe('TeamTaskCreateModal', () => {
       />
     );
 
-    const deadlineInput = screen.getByLabelText(/target deadline/i);
-    expect(deadlineInput).toHaveAttribute('min', today);
-    expect(deadlineInput).toHaveValue(today);
+    const deadlineInput = screen.getByLabelText(/target deadline/i) as HTMLInputElement;
+    expect(deadlineInput.type).toBe('datetime-local');
+    expect(deadlineInput.min).toContain(today);
+    expect(deadlineInput.value).toContain(today);
 
     fireEvent.change(screen.getByLabelText(/task title/i), {
       target: { value: 'Old Deadline Task' },
     });
-    fireEvent.change(deadlineInput, { target: { value: yesterday } });
+    fireEvent.change(deadlineInput, { target: { value: `${yesterday}T17:00` } });
     fireEvent.click(screen.getByRole('button', { name: /create task/i }));
 
     await waitFor(() => {
@@ -155,5 +156,75 @@ describe('TeamTaskCreateModal', () => {
     });
     expect(handleCreated).not.toHaveBeenCalled();
     expect(handleClose).not.toHaveBeenCalled();
+  });
+
+  it('rejects a deadline earlier today instead of rolling it over', async () => {
+    const handleCreated = vi.fn();
+    const handleClose = vi.fn();
+    const now = new Date(2026, 10, 23, 11, 30, 0);
+
+    render(
+      <TeamTaskCreateModal
+        isOpen={true}
+        onClose={handleClose}
+        teamId="team-1"
+        leadId="user-lead"
+        members={mockMembers}
+        milestones={mockMilestones}
+        onTaskCreated={handleCreated}
+        today={getTodayDateString(now)}
+        now={now}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText(/task title/i), {
+      target: { value: 'Earlier Time Task' },
+    });
+    fireEvent.change(screen.getByLabelText(/target deadline/i), {
+      target: { value: '2026-11-23T11:29' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /create task/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/deadline cannot be in the past/i)).toBeInTheDocument();
+    });
+    expect(handleCreated).not.toHaveBeenCalled();
+    expect(handleClose).not.toHaveBeenCalled();
+  });
+
+  it('stores a future datetime-local deadline as an ISO timestamp', async () => {
+    const handleCreated = vi.fn();
+    const now = new Date(2026, 10, 23, 11, 30, 0);
+
+    render(
+      <TeamTaskCreateModal
+        isOpen={true}
+        onClose={vi.fn()}
+        teamId="team-1"
+        leadId="user-lead"
+        members={mockMembers}
+        milestones={mockMilestones}
+        onTaskCreated={handleCreated}
+        today={getTodayDateString(now)}
+        now={now}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText(/task title/i), {
+      target: { value: 'Future Deadline Task' },
+    });
+    fireEvent.change(screen.getByLabelText(/target deadline/i), {
+      target: { value: '2026-11-23T12:00' },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /create task/i }));
+
+    await waitFor(() => {
+      expect(handleCreated).toHaveBeenCalledWith(
+        expect.objectContaining({
+          deadline: new Date(2026, 10, 23, 12, 0).toISOString(),
+        })
+      );
+    });
   });
 });

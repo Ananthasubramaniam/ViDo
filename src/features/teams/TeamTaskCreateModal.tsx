@@ -2,7 +2,13 @@ import React, { useState } from 'react';
 import { X, CheckSquare, Plus, AlertCircle } from 'lucide-react';
 import { getTeamRepository } from './teamRepository';
 import { TeamMember, TeamMilestone, TeamTask, TeamTaskPriority } from './types';
-import { getTodayDateString, isPastDate } from '../../data/dateValidation';
+import {
+  dateTimeLocalToIso,
+  getTodayDateString,
+  isPastDate,
+  isPastDateTime,
+  parseDateTimeLocal,
+} from '../../data/dateValidation';
 import { Button } from '../../components/ui';
 
 export interface TeamTaskCreateModalProps {
@@ -15,6 +21,8 @@ export interface TeamTaskCreateModalProps {
   onTaskCreated?: (task: TeamTask) => void;
   /** Reference date for "today". Defaults to the real current date. */
   today?: string;
+  /** Reference time for deadline validation. Defaults to the real current time. */
+  now?: Date;
 }
 
 export const TeamTaskCreateModal: React.FC<TeamTaskCreateModalProps> = ({
@@ -26,16 +34,20 @@ export const TeamTaskCreateModal: React.FC<TeamTaskCreateModalProps> = ({
   milestones,
   onTaskCreated,
   today,
+  now,
 }) => {
-  const [minDate] = useState(() => today ?? getTodayDateString());
+  const [minDate] = useState(() => today ?? getTodayDateString(now ?? new Date()));
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [deadline, setDeadline] = useState(minDate);
+  const [deadline, setDeadline] = useState(`${minDate}T23:59`);
   const [priority, setPriority] = useState<TeamTaskPriority>('medium');
   const [milestoneId, setMilestoneId] = useState<string>('');
   const [assigneeId, setAssigneeId] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const referenceNow = now ?? new Date();
+  const minDateTime = `${minDate}T00:00`;
 
   if (!isOpen) return null;
 
@@ -47,12 +59,24 @@ export const TeamTaskCreateModal: React.FC<TeamTaskCreateModalProps> = ({
       setError('Please provide a task title');
       return;
     }
-    if (!deadline) {
-      setError('Please specify a delivery deadline');
+    const parsed = parseDateTimeLocal(deadline);
+    if (!parsed) {
+      setError('Please specify a valid delivery deadline');
       return;
     }
-    if (isPastDate(deadline, minDate)) {
+    if (isPastDate(parsed.date, minDate)) {
       setError('Deadline cannot be in the past. Choose today or a future date.');
+      return;
+    }
+
+    if (isPastDateTime(parsed.date, parsed.time, referenceNow)) {
+      setError('Deadline cannot be in the past. Choose a future date and time.');
+      return;
+    }
+
+    const deadlineIso = dateTimeLocalToIso(deadline);
+    if (!deadlineIso) {
+      setError('Please specify a valid delivery deadline');
       return;
     }
 
@@ -68,7 +92,7 @@ export const TeamTaskCreateModal: React.FC<TeamTaskCreateModalProps> = ({
         leadId,
         title: cleanTitle,
         description: description.trim() || undefined,
-        deadline,
+        deadline: deadlineIso,
         priority,
         status: 'active',
         progress: 0,
@@ -80,7 +104,7 @@ export const TeamTaskCreateModal: React.FC<TeamTaskCreateModalProps> = ({
 
       setTitle('');
       setDescription('');
-      setDeadline(minDate);
+      setDeadline(`${minDate}T23:59`);
       setMilestoneId('');
       setAssigneeId('');
       if (onTaskCreated) onTaskCreated(created);
@@ -166,8 +190,8 @@ export const TeamTaskCreateModal: React.FC<TeamTaskCreateModalProps> = ({
               </label>
               <input
                 id="task-deadline"
-                type="date"
-                min={minDate}
+                type="datetime-local"
+                min={minDateTime}
                 aria-invalid={!!error}
                 value={deadline}
                 onChange={(e) => {

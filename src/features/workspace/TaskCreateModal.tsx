@@ -1,7 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button, Input } from '../../components/ui';
 import { SampleTask } from '../../data/sampleTasks';
-import { getTodayDateString, isPastDate } from '../../data/dateValidation';
+import {
+  dateTimeLocalToIso,
+  getTodayDateString,
+  isPastDate,
+  isPastDateTime,
+} from '../../data/dateValidation';
 import { X, Tag, CheckCircle2 } from 'lucide-react';
 
 export interface TaskCreateModalProps {
@@ -10,6 +15,8 @@ export interface TaskCreateModalProps {
   onCreateTask?: (task: SampleTask) => void;
   /** Reference date for "today". Defaults to the real current date. */
   today?: string;
+  /** Reference time for deadline validation. Defaults to the real current time. */
+  now?: Date;
 }
 
 export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
@@ -17,18 +24,22 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
   onClose,
   onCreateTask,
   today,
+  now,
 }) => {
-  const [minDate] = useState(() => today ?? getTodayDateString());
+  const [minDate] = useState(() => today ?? getTodayDateString(now ?? new Date()));
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState(minDate);
   const [dateError, setDateError] = useState<string | null>(null);
-  const [dueTime, setDueTime] = useState('17:00');
+  const [dueTime, setDueTime] = useState('');
+  const [timeError, setTimeError] = useState<string | null>(null);
   const [priority, setPriority] = useState<'high' | 'medium' | 'low' | ''>('medium');
   const [category, setCategory] = useState<'personal' | 'home' | 'work'>('personal');
   const [submittedNotice, setSubmittedNotice] = useState(false);
 
   const titleInputRef = useRef<HTMLInputElement>(null);
+
+  const referenceNow = now ?? new Date();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -52,24 +63,41 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
 
     if (isPastDate(dueDate, minDate)) {
       setDateError('Due date cannot be in the past. Choose today or a future date.');
+      setTimeError(null);
       return;
     }
+
+    const effectiveTime = dueTime || '23:59';
+    const deadlineIso = dateTimeLocalToIso(`${dueDate}T${effectiveTime}`);
+    if (!deadlineIso) {
+      setDateError(null);
+      setTimeError('Please enter a valid due time.');
+      return;
+    }
+
+    if (isPastDateTime(dueDate, effectiveTime, referenceNow)) {
+      setDateError(null);
+      setTimeError('Due time cannot be in the past. Choose a future time.');
+      return;
+    }
+
     setDateError(null);
+    setTimeError(null);
 
     const newTask: SampleTask = {
       id: `task-${Date.now()}`,
       title: title.trim(),
       description: description.trim() || undefined,
-      dueDate: dueDate || '2026-11-17',
-      dueTime: dueTime || '18:00',
+      dueDate,
+      dueTime: effectiveTime,
       priority: (priority as 'high' | 'medium' | 'low') || undefined,
       state: 'active',
       category,
-      createdAt: '2026-11-17T12:00:00Z',
+      createdAt: new Date().toISOString(),
       checkpoints: [
         {
           id: `cp-${Date.now()}`,
-          timestamp: '2026-11-17T12:00:00Z',
+          timestamp: new Date().toISOString(),
           note: 'Task initialized in workspace.',
         },
       ],
@@ -83,7 +111,8 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
     setDescription('');
     setDueDate(minDate);
     setDateError(null);
-    setDueTime('17:00');
+    setDueTime('');
+    setTimeError(null);
     setPriority('medium');
     setCategory('personal');
 
@@ -162,16 +191,24 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
               onChange={(e) => {
                 setDueDate(e.target.value);
                 if (dateError) setDateError(null);
+                if (timeError) setTimeError(null);
               }}
             />
 
-            <Input
-              label="Due Time (Optional)"
-              type="time"
-              value={dueTime}
-              onChange={(e) => setDueTime(e.target.value)}
-              helperText="Defaults to 23:59 if omitted"
-            />
+            <div>
+              <Input
+                label="Due Time (Optional)"
+                type="time"
+                error={timeError || undefined}
+                aria-invalid={!!timeError}
+                value={dueTime}
+                onChange={(e) => {
+                  setDueTime(e.target.value);
+                  if (timeError) setTimeError(null);
+                }}
+                helperText="Defaults to 23:59 if omitted"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">

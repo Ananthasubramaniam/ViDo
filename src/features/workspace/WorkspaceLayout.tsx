@@ -440,7 +440,6 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
         onCreateTask={handleCreateTask}
-        today={isPreview ? BENCHMARK_DATE_STR : undefined}
       />
 
       <CreateTeamModal

@@ -127,6 +127,7 @@ ViDo offers a fully interactive client-side routing structure:
 - **Incremental Progress Tracking**: Measure progress continuously (0% to 100%) rather than relying on binary done/not-done toggles.
 - **Timestamped Checkpoints**: Preserve a living audit trail of status updates, blockers, and decisions for every responsibility.
 - **Automated Deadline Auditing**: Automatic detection for on-track, overdue, and late deliveries based on real-time date calculations.
+- **Strict Deadline Validation**: Task creation rejects past calendar dates and past times on the current day, so deadlines cannot be scheduled in the past.
 
 ### 🎯 Calm, Section-Limited Views
 - **Today's Agenda**: High-priority tasks scheduled for the active day.
