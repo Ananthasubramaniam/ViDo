@@ -4,20 +4,17 @@ import { MemoryRouter } from 'react-router-dom';
 import { WorkspaceTopBar } from './WorkspaceTopBar';
 
 describe('WorkspaceTopBar', () => {
-  it('renders title, subtitle, search placeholder, and preview badge', () => {
+  it('renders workspace label, search placeholder, and preview badge', () => {
     const handleFocus = vi.fn();
     render(
       <MemoryRouter>
         <WorkspaceTopBar
-          title="Home Overview"
-          subtitle="Daily task summary"
           onSearchFocus={handleFocus}
         />
       </MemoryRouter>
     );
 
-    expect(screen.getByRole('heading', { name: /home overview/i })).toBeInTheDocument();
-    expect(screen.getByText('Daily task summary')).toBeInTheDocument();
+    expect(screen.getByText('Workspace')).toBeInTheDocument();
     expect(screen.getByText('Interactive Preview')).toBeInTheDocument();
     expect(screen.getByText('Demo User')).toBeInTheDocument();
     expect(screen.getByText('Personal Workspace')).toBeInTheDocument();
@@ -46,7 +43,6 @@ describe('WorkspaceTopBar', () => {
     render(
       <MemoryRouter>
         <WorkspaceTopBar
-          title="Team View"
           invitations={mockInvites}
           onRespondInvitation={handleRespond}
         />
@@ -63,7 +59,7 @@ describe('WorkspaceTopBar', () => {
   it('renders current date dynamically in top bar badge', () => {
     render(
       <MemoryRouter>
-        <WorkspaceTopBar title="Date Test" />
+        <WorkspaceTopBar />
       </MemoryRouter>
     );
 
@@ -75,7 +71,7 @@ describe('WorkspaceTopBar', () => {
   it('renders custom currentDate prop when provided', () => {
     render(
       <MemoryRouter>
-        <WorkspaceTopBar title="Date Test" currentDate="Friday, 25 Dec 2026" />
+        <WorkspaceTopBar currentDate="Friday, 25 Dec 2026" />
       </MemoryRouter>
     );
 

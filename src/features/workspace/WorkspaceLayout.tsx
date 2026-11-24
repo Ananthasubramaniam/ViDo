@@ -24,6 +24,7 @@ import { HomeView } from './views/HomeView';
 import { ListView } from './views/ListView';
 import { CalendarView } from './views/CalendarView';
 import { AnalyticsView } from './views/AnalyticsView';
+import { SettingsView } from './views/SettingsView';
 import { NotFoundView } from './views/NotFoundView';
 import { TaskDetailModal } from './TaskDetailModal';
 import { TaskCreateModal } from './TaskCreateModal';
@@ -34,6 +35,7 @@ import { getTeamRepository } from '../teams/teamRepository';
 import { Team } from '../teams/types';
 import { useCalendar } from './useCalendar';
 import { usePlanningTargets } from './usePlanningTargets';
+import { useCategories } from './useCategories';
 
 export interface WorkspaceLayoutProps {
   isPreview?: boolean;
@@ -68,6 +70,7 @@ export const isKnownWorkspacePath = (pathname: string, basePath: string): boolea
     'archived',
     'calendar',
     'analytics',
+    'settings',
   ]);
 
   if (exactKnownSubPaths.has(subPath)) return true;
@@ -132,6 +135,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   // users and in localStorage for the shareable preview.
   const calendar = useCalendar(authUser?.uid, isLive ? 'live' : 'demo');
   const planningTargets = usePlanningTargets(authUser?.uid, isLive ? 'live' : 'demo');
+  const categoriesState = useCategories(authUser?.uid, isLive ? 'live' : 'demo');
 
   // Task state: for preview, use SAMPLE_TASKS. For authenticated users, scope to user ID.
   const userStorageKey = authUser
@@ -287,65 +291,6 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
     navigate('/');
   };
 
-  const getHeaderInfo = () => {
-    const path = location.pathname;
-    if (path.endsWith('/tasks')) {
-      return {
-        title: 'Tasks',
-        subtitle: 'Manage, filter, and track all your active responsibilities',
-      };
-    }
-    if (path.endsWith('/today')) {
-      return {
-        title: 'Tasks',
-        subtitle: isPreview
-          ? "Today's responsibilities due on 17 November 2026"
-          : "Today's responsibilities and daily workload",
-      };
-    }
-    if (path.endsWith('/upcoming')) {
-      return { title: 'Tasks', subtitle: 'Scheduled responsibilities for future dates' };
-    }
-    if (path.endsWith('/needs-attention')) {
-      return { title: 'Tasks', subtitle: 'Overdue or urgent items requiring action' };
-    }
-    if (path.endsWith('/completed')) {
-      return { title: 'Tasks', subtitle: 'All finished work with completion timings' };
-    }
-    if (path.endsWith('/archived')) {
-      return { title: 'Tasks', subtitle: 'Shelved and preserved task history' };
-    }
-    if (path.endsWith('/calendar')) {
-      return {
-        title: 'Planning Calendar',
-        subtitle: 'Weekly and monthly view of tasks and calendar commitments',
-      };
-    }
-    if (path.endsWith('/analytics')) {
-      return {
-        title: 'Completion Analytics',
-        subtitle: 'Weekly completion, targets, and monthly goal progress',
-      };
-    }
-    if (path.includes('/team/')) {
-      const activeTeamId = path.split('/team/')[1]?.split('/')[0];
-      const currentTeam = teams.find((t) => t.id === activeTeamId);
-      return {
-        title: currentTeam?.name || 'Team Workspace',
-        subtitle:
-          currentTeam?.description || 'Collaborative team deliverables and phased milestones',
-      };
-    }
-    return {
-      title: 'Dashboard',
-      subtitle: isPreview
-        ? 'Calm snapshot of today, urgent work, and upcoming items'
-        : `Personal overview for ${user.name}`,
-    };
-  };
-
-  const headerInfo = getHeaderInfo();
-
   return (
     <div className="flex flex-col min-h-screen bg-[var(--canvas)] text-[var(--ink)] antialiased">
       {/* 1. Global Persistent Demo Preview Notice Bar - ONLY in Preview mode */}
@@ -357,27 +302,27 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
           <div className="flex items-center gap-3 min-w-0">
             <Link
               to="/"
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[var(--accent)] hover:opacity-90 text-white font-bold text-xs shadow-xs transition-all shrink-0 cursor-pointer"
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-[var(--accent)] hover:opacity-90 text-white font-bold text-sm shadow-xs transition-all shrink-0 cursor-pointer"
             >
-              <ArrowLeft className="w-3.5 h-3.5" />
+              <ArrowLeft className="w-4 h-4" />
               <span>Back to Landing Page</span>
             </Link>
 
             <span className="h-4 w-px bg-white/20 hidden sm:inline-block" />
 
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-400 text-amber-950 font-mono shadow-xs shrink-0 flex items-center gap-1.5">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-amber-400 text-amber-950 font-mono shadow-xs shrink-0 flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-700 animate-pulse" />
                 DEMO PREVIEW
               </span>
-              <p className="text-xs text-gray-200 truncate hidden md:block">
+              <p className="text-sm text-gray-200 truncate hidden md:block">
                 <span className="font-semibold text-white">Interactive Demo:</span> You are exploring
                 ViDo with mock data. Real account sync is disabled.
               </p>
             </div>
           </div>
 
-          <div className="text-[11px] font-mono text-gray-400 hidden sm:block shrink-0">
+          <div className="text-xs font-mono text-gray-300 hidden sm:block shrink-0">
             Preview Mode
           </div>
         </aside>
@@ -417,8 +362,6 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col min-w-0">
           <WorkspaceTopBar
-            title={headerInfo.title}
-            subtitle={headerInfo.subtitle}
             isPreview={isPreview}
             user={user}
             authMode={authMode}
@@ -442,6 +385,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                     basePath={basePath}
                     user={user}
                     tasks={tasks}
+                    categories={categoriesState.categories}
                     dashboard={dashboard}
                     initialTab="dashboard"
                     onTaskClick={handleTaskClick}
@@ -462,6 +406,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                     basePath={basePath}
                     user={user}
                     tasks={tasks}
+                    categories={categoriesState.categories}
                     dashboard={dashboard}
                     initialTab="tasks"
                     initialStatus="all"
@@ -486,6 +431,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                         : 'Tasks targeted for completion by end of day today.'
                     }
                     tasks={views.today}
+                    categories={categoriesState.categories}
                     onTaskClick={handleTaskClick}
                     onNewTaskClick={() => setIsCreateOpen(true)}
                     isPreview={isPreview}
@@ -499,6 +445,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                     title="Upcoming Schedule"
                     description="Planned tasks due beyond today's horizon."
                     tasks={views.upcoming}
+                    categories={categoriesState.categories}
                     onTaskClick={handleTaskClick}
                     onNewTaskClick={() => setIsCreateOpen(true)}
                     isPreview={isPreview}
@@ -512,6 +459,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                     title="Needs Attention"
                     description="Tasks past their target deadline or requiring urgent intervention."
                     tasks={views.needsAttention}
+                    categories={categoriesState.categories}
                     onTaskClick={handleTaskClick}
                     onNewTaskClick={() => setIsCreateOpen(true)}
                     isPreview={isPreview}
@@ -525,6 +473,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                     title="Completed Tasks"
                     description="Full historical record of delivered responsibilities."
                     tasks={views.completed}
+                    categories={categoriesState.categories}
                     onTaskClick={handleTaskClick}
                     isPreview={isPreview}
                   />
@@ -537,6 +486,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                     title="Archived Tasks"
                     description="Shelved tasks preserved with their complete checkpoint history."
                     tasks={views.archived}
+                    categories={categoriesState.categories}
                     onTaskClick={handleTaskClick}
                     isPreview={isPreview}
                   />
@@ -575,6 +525,20 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                   />
                 }
               />
+              <Route
+                path="settings"
+                element={
+                  <SettingsView
+                    isPreview={isPreview}
+                    basePath={basePath}
+                    user={user}
+                    categories={categoriesState.categories}
+                    onAddCategory={categoriesState.addCategory}
+                    onDeleteCategory={categoriesState.deleteCategory}
+                    onSignOut={handleSignOut}
+                  />
+                }
+              />
               <Route path="*" element={<Navigate to={basePath} replace />} />
             </Routes>
           </main>
@@ -597,6 +561,8 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
         onCreateTask={handleCreateTask}
+        categories={categoriesState.categories}
+        onAddCategory={categoriesState.addCategory}
       />
 
       <CreateTeamModal
