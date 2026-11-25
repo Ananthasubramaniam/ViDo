@@ -77,4 +77,18 @@ describe('WorkspaceTopBar', () => {
 
     expect(screen.getByText('Friday, 25 Dec 2026')).toBeInTheDocument();
   });
+
+  it('changes top bar layout and breadcrumbs when on the settings page', () => {
+    render(
+      <MemoryRouter initialEntries={['/workspace/settings']}>
+        <WorkspaceTopBar basePath="/workspace" isSettings={true} />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('Settings')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /back to dashboard/i })).toBeInTheDocument();
+    expect(screen.getByText('Preferences & Customization')).toBeInTheDocument();
+    expect(screen.queryByLabelText(/search tasks/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/filter tasks/i)).not.toBeInTheDocument();
+  });
 });

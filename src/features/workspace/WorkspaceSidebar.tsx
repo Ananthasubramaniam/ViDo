@@ -44,6 +44,7 @@ export interface WorkspaceSidebarProps {
   onSidebarWidthChange?: (width: number) => void;
   onNewTaskClick?: () => void;
   onCreateTeamClick?: () => void;
+  onOpenSettings?: () => void;
   onSignOut?: () => void;
 }
 
@@ -57,6 +58,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
   onSidebarWidthChange,
   onNewTaskClick,
   onCreateTeamClick,
+  onOpenSettings,
   onSignOut,
 }) => {
   const location = useLocation();
@@ -456,6 +458,12 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
 
         <NavLink
           to={settingsPath}
+          onClick={(e) => {
+            if (onOpenSettings) {
+              e.preventDefault();
+              onOpenSettings();
+            }
+          }}
           className={({ isActive }) =>
             `flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
               isActive

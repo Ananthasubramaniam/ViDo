@@ -24,7 +24,7 @@ import { HomeView } from './views/HomeView';
 import { ListView } from './views/ListView';
 import { CalendarView } from './views/CalendarView';
 import { AnalyticsView } from './views/AnalyticsView';
-import { SettingsView } from './views/SettingsView';
+import { SettingsModal } from './SettingsModal';
 import { NotFoundView } from './views/NotFoundView';
 import { TaskDetailModal } from './TaskDetailModal';
 import { TaskCreateModal } from './TaskCreateModal';
@@ -191,7 +191,18 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   const [selectedTask, setSelectedTask] = useState<SampleTask | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const isSettingsRoute = location.pathname.endsWith('/settings');
+  const showSettingsModal = isSettingsOpen || isSettingsRoute;
+
+  const handleCloseSettings = () => {
+    setIsSettingsOpen(false);
+    if (isSettingsRoute) {
+      navigate(basePath, { replace: true });
+    }
+  };
 
   const todayStr = getTodayDateString();
   const benchmarkDateStr = isPreview ? BENCHMARK_DATE_STR : todayStr;
@@ -356,6 +367,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
           teams={teams}
           onNewTaskClick={() => setIsCreateOpen(true)}
           onCreateTeamClick={() => setIsCreateTeamOpen(true)}
+          onOpenSettings={() => setIsSettingsOpen(true)}
           onSignOut={handleSignOut}
         />
 
@@ -363,6 +375,8 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         <div className="flex-1 flex flex-col min-w-0">
           <WorkspaceTopBar
             isPreview={isPreview}
+            basePath={basePath}
+            isSettings={showSettingsModal}
             user={user}
             authMode={authMode}
             onSignOut={handleSignOut}
@@ -528,14 +542,17 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
               <Route
                 path="settings"
                 element={
-                  <SettingsView
+                  <HomeView
                     isPreview={isPreview}
                     basePath={basePath}
                     user={user}
+                    tasks={tasks}
                     categories={categoriesState.categories}
-                    onAddCategory={categoriesState.addCategory}
-                    onDeleteCategory={categoriesState.deleteCategory}
-                    onSignOut={handleSignOut}
+                    dashboard={dashboard}
+                    initialTab="dashboard"
+                    onTaskClick={handleTaskClick}
+                    onToggleTask={handleToggleTask}
+                    onNewTaskClick={() => setIsCreateOpen(true)}
                   />
                 }
               />
@@ -546,6 +563,17 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
       </div>
 
       {/* Modals */}
+      <SettingsModal
+        isOpen={showSettingsModal}
+        onClose={handleCloseSettings}
+        isPreview={isPreview}
+        user={user}
+        categories={categoriesState.categories}
+        onAddCategory={categoriesState.addCategory}
+        onDeleteCategory={categoriesState.deleteCategory}
+        onSignOut={handleSignOut}
+      />
+
       <TaskDetailModal
         task={selectedTask}
         isOpen={isDetailOpen}

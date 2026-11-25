@@ -44,6 +44,19 @@ describe('WorkspaceSidebar', () => {
     expect(handleNewTask).toHaveBeenCalledTimes(1);
   });
 
+  it('triggers onOpenSettings callback when Settings link is clicked', () => {
+    const handleOpenSettings = vi.fn();
+    render(
+      <MemoryRouter initialEntries={['/preview']}>
+        <WorkspaceSidebar counts={mockCounts} onOpenSettings={handleOpenSettings} />
+      </MemoryRouter>
+    );
+
+    const settingsLink = screen.getByRole('link', { name: /settings/i });
+    fireEvent.click(settingsLink);
+    expect(handleOpenSettings).toHaveBeenCalledTimes(1);
+  });
+
   it('renders teams and triggers create team callback', () => {
     const handleCreateTeam = vi.fn();
     const mockTeams = [

@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { SettingsView } from './SettingsView';
 
 describe('SettingsView', () => {
-  it('renders settings sections: theme, profile, preferences, and workspace actions', () => {
+  it('renders settings sections navigation tabs and allows switching views', () => {
     render(
       <SettingsView
         isPreview={true}
@@ -12,20 +12,40 @@ describe('SettingsView', () => {
     );
 
     expect(screen.getByRole('heading', { level: 1, name: /^settings$/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /appearance & themes/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /profile & identity/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /task & planning preferences/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /workspace actions/i })).toBeInTheDocument();
 
-    // Verify all 3 accents exist
+    // Verify all 5 navigation tabs exist
+    expect(screen.getByRole('tab', { name: /account/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /theme & appearance/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /personalised categories/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /preferences/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /workspace actions/i })).toBeInTheDocument();
+
+    // Default section is Account (Profile & Identity)
+    expect(screen.getByRole('heading', { name: /profile & identity/i })).toBeInTheDocument();
+
+    // Switch to Theme & Appearance tab
+    fireEvent.click(screen.getByRole('tab', { name: /theme & appearance/i }));
+    expect(screen.getByRole('heading', { name: /appearance & themes/i })).toBeInTheDocument();
     expect(screen.getByText('Cobalt Blue')).toBeInTheDocument();
     expect(screen.getByText('Deep Indigo')).toBeInTheDocument();
     expect(screen.getByText('Forest Green')).toBeInTheDocument();
+
+    // Switch to Personalised Categories tab
+    fireEvent.click(screen.getByRole('tab', { name: /personalised categories/i }));
+    expect(screen.getByRole('heading', { name: /personalised categories/i })).toBeInTheDocument();
+
+    // Switch to Preferences tab
+    fireEvent.click(screen.getByRole('tab', { name: /preferences/i }));
+    expect(screen.getByRole('heading', { name: /task & planning preferences/i })).toBeInTheDocument();
+
+    // Switch to Workspace Actions tab
+    fireEvent.click(screen.getByRole('tab', { name: /workspace actions/i }));
+    expect(screen.getByRole('heading', { name: /workspace actions/i })).toBeInTheDocument();
   });
 
   it('switches active theme and updates document data-accent attribute', () => {
     localStorage.clear();
-    render(<SettingsView isPreview={true} />);
+    render(<SettingsView isPreview={true} initialSection="theme" />);
 
     const greenCard = screen.getByTestId('accent-card-green');
     fireEvent.click(greenCard);
@@ -40,10 +60,11 @@ describe('SettingsView', () => {
     expect(localStorage.getItem('vido_accent')).toBe('indigo');
   });
 
-  it('allows updating user profile display name', () => {
+  it('allows updating user profile display name in account section', () => {
     render(
       <SettingsView
         isPreview={true}
+        initialSection="account"
         user={{ id: 'user-123', name: 'Original Name', email: 'user@example.com' }}
       />
     );
@@ -59,8 +80,8 @@ describe('SettingsView', () => {
     expect(localStorage.getItem('vido_user_display_name')).toBe('Jane Doe');
   });
 
-  it('allows updating task creation preferences', () => {
-    render(<SettingsView isPreview={true} />);
+  it('allows updating task creation preferences in preferences section', () => {
+    render(<SettingsView isPreview={true} initialSection="preferences" />);
 
     const categorySelect = screen.getByLabelText(/default category/i);
     fireEvent.change(categorySelect, { target: { value: 'work' } });
@@ -80,9 +101,9 @@ describe('SettingsView', () => {
     expect(localStorage.getItem('vido_pref_duetime')).toBe('17:00');
   });
 
-  it('triggers sign out callback when Sign Out button is clicked', () => {
+  it('triggers sign out callback when Sign Out button is clicked in workspace section', () => {
     const handleSignOut = vi.fn();
-    render(<SettingsView isPreview={true} onSignOut={handleSignOut} />);
+    render(<SettingsView isPreview={true} initialSection="workspace" onSignOut={handleSignOut} />);
 
     const signOutBtn = screen.getByRole('button', { name: /sign out/i });
     fireEvent.click(signOutBtn);
@@ -90,7 +111,7 @@ describe('SettingsView', () => {
     expect(handleSignOut).toHaveBeenCalledTimes(1);
   });
 
-  it('allows adding and deleting personalised categories', async () => {
+  it('allows adding and deleting personalised categories in categories section', async () => {
     const handleAddCat = vi.fn().mockResolvedValue({
       id: 'fitness',
       name: 'Fitness & Health',
@@ -110,6 +131,7 @@ describe('SettingsView', () => {
     render(
       <SettingsView
         isPreview={true}
+        initialSection="categories"
         categories={initialCategories}
         onAddCategory={handleAddCat}
         onDeleteCategory={handleDeleteCat}
